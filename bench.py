@@ -9,6 +9,8 @@ import questionary
 from tqdm import tqdm
 
 import utils
+from npc_runtime import split_response
+from chat_templates import MINI_REASONING_RULE
 from utils import get_devices, get_models, MyException
 
 # MODEL_DIR = 'models/'
@@ -20,12 +22,17 @@ LOG_DIR = ""
 with open("data/test.json", "r") as f: MESSAGES = json.load(f)
 with open("data/data_3npcs.json") as file: NPC = json.load(file)[2]
 CUSTOM_JINJA = False
+# mini reasoning (plan <speech> dialogue): set True here or pass --mini
 REASON = False
+if "--mini" in sys.argv:
+    sys.argv.remove("--mini")
+    REASON = True
 if CUSTOM_JINJA:
     CHAT_HISTORY = [{"role": "system", "content": NPC["role"]}]
     WARMUP = CHAT_HISTORY[:]
 else:
-    CHAT_HISTORY = [{"role": "system", "content": NPC["role"] + NPC["shared_system_prompt"]}]
+    # the model's own template does not add the rule, so it goes into the system message
+    CHAT_HISTORY = [{"role": "system", "content": NPC["role"] + NPC["shared_system_prompt"] + (" " + MINI_REASONING_RULE if REASON else "")}]
     WARMUP = CHAT_HISTORY[:] + [{"role": "user", "content": "warmup"}]
 
 NUM_MESS = len(MESSAGES)
@@ -33,7 +40,7 @@ CONTEXT_SIZE = 4096
 MAX_TOKENS = 256
 TIMEOUT = (NUM_MESS * (0.9 + (MAX_TOKENS / 5.5))).__ceil__()
 # TIMEOUT = 4
-HEADER = ["MODEL", "TTFT", "T/s", "USER TOKENS", "NPC TOKENS", "TOTAL TIME", "ALL TOKENS", "PROMPT", "RESPONSE"]
+HEADER = ["MODEL", "TTFT", "T/s", "USER TOKENS", "NPC TOKENS", "TOTAL TIME", "ALL TOKENS", "DIALOGUE TTFT", "FORMAT OK", "PROMPT", "RESPONSE"]
 ERROR_ROW = [-1 for _ in range(len(HEADER)-2)]
 
 
@@ -67,7 +74,8 @@ class Benchmarker:
 
         log = []
         self.models = sorted([os.path.basename(x) for x in os.listdir(utils.MODELS_DIRECTORY) if x.endswith(".gguf")],key=os.path.basename)
-        self.models = [{"family": None, "name": x, "path": utils.MODELS_DIRECTORY+"/"+x} for x in self.models]
+        families = {m["path"]: m["family"] for m in get_models()}
+        self.models = [{"family": families.get(utils.MODELS_DIRECTORY+"/"+x), "name": x, "path": utils.MODELS_DIRECTORY+"/"+x} for x in self.models]
         num_models = len(self.models)
         test_start = time.perf_counter()
         chat_history = CHAT_HISTORY[:]
@@ -89,7 +97,7 @@ class Benchmarker:
                 timeout = TIMEOUT
                 for user_input in tqdm(MESSAGES, desc=f"Testing {i + 1}/{num_models} {model["name"]}", unit="prompt"):
                     chat_history.append({"role": "user", "content": user_input})
-                    ttft, t_out = TIMEOUT*2, 0
+                    ttft, t_out, dialogue_ttft = TIMEOUT*2, 0, -1
                     start_time = time.perf_counter()
                     assistant_response = [""] * MAX_TOKENS
 
@@ -102,6 +110,8 @@ class Benchmarker:
                                 ttft = min(current-start_time, ttft)
                                 assistant_response[t_out] = delta['content']
                                 t_out += 1
+                                if dialogue_ttft < 0 and split_response("".join(assistant_response[:t_out]), REASON)[1]:
+                                    dialogue_ttft = current-start_time
                         else: raise MyException("Timeout!", f"Ran out of time ({TIMEOUT} s)")
                     assistant_response = "".join(assistant_response)
                     # raise  Exception("hups")
@@ -114,7 +124,9 @@ class Benchmarker:
                     chat_history.append({"role": "assistant", "content": assistant_response})
                     query = user_input[:].replace('\n', '|')
                     response = assistant_response[:].replace('\n', '|')
-                    model_log.append([model["name"], ttft, tps, t_in, t_out, total_time, all_tokens, query, response])
+                    format_ok = split_response(assistant_response, REASON)[2]
+                    if not format_ok: dialogue_ttft = -1
+                    model_log.append([model["name"], ttft, tps, t_in, t_out, total_time, all_tokens, dialogue_ttft, int(format_ok), query, response])
                     prev_n = all_tokens
                     # row = utils.run_llm(llm, model, user_input, chat_history, MAX_TOKENS, timeout=timeout)
                     # timeout -= row[5]
@@ -154,7 +166,7 @@ if __name__ == '__main__':
             start = time.time()
             for j in range(len(devices)):
                 prev = time.time()
-                subprocess.run([sys.executable, "bench.py", str(j)])
+                subprocess.run([sys.executable, "bench.py", str(j)] + (["--mini"] if REASON else []))
                 print(f"This took {time.time() - prev} seconds")
             print(f"All tests took {time.time() - start} seconds")
         else: Benchmarker(num)

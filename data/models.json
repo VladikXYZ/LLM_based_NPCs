@@ -24,9 +24,9 @@
   "params": 122
  },
  {
-  "name": "DiffuCoder 7B",
-  "path": "models/DiffuCoder-7B-Instruct-q4_k_m.gguf",
-  "family": "chatml",
+  "name": "GLM 4.6V Flash",
+  "path": "models/GLM-4.6V-Flash-Q4_K_M.gguf",
+  "family": "glm_v",
   "params": 122
  },
  {
@@ -36,27 +36,27 @@
   "params": 122
  },
  {
-  "name": "Jan v3.5",
-  "path": "models/Jan-v3.5-4B-Q4_K_M.gguf",
-  "family": "chatml",
+  "name": "GLM 4.7 Flash REAP 23B A3B",
+  "path": "models/GLM-4.7-Flash-REAP-23B-A3B-Q4_K_M.gguf",
+  "family": "glm",
   "params": 122
  },
  {
   "name": "LFM2 24B A2B",
   "path": "models/LFM2-24B-A2B-Q4_K_M.gguf",
-  "family": "chatml",
+  "family": "chatml_nr",
   "params": 122
  },
  {
   "name": "LFM2.5 1.2B",
   "path": "models/LFM2.5-1.2B-Instruct-Q4_K_M.gguf",
-  "family": "chatml",
+  "family": "chatml_nr",
   "params": 122
  },
  {
   "name": "LFM2.5 2.6B",
   "path": "models/LFM2.5-2.6B-Q4_K_M.gguf",
-  "family": "chatml",
+  "family": "chatml_bos",
   "params": 122
  },
  {
@@ -73,14 +73,14 @@
  },
  {
   "name": "LFM2.5 8B A1B",
-  "path": "models/LFM2.5-8B-A1B-UD-Q4_K_M.gguf",
-  "family": "chatml",
+  "path": "models/LFM2.5-8B-A1B-Q4_K_M.gguf",
+  "family": "chatml_nr",
   "params": 122
  },
  {
-  "name": "LLaDA MoE 7B A1B",
-  "path": "models/LLaDA-MoE-7B-A1B-Instruct-TD.Q4_K_M.gguf",
-  "family": null,
+  "name": "Ling 3.0 tiny",
+  "path": "models/Ling-3.0-tiny-Q4_K_M.gguf",
+  "family": "ling",
   "params": 122
  },
  {
@@ -102,33 +102,45 @@
   "params": 122
  },
  {
-  "name": "Mistral 7B",
-  "path": "models/Mistral-7B-Instruct-v0.3.Q4_K_M.gguf",
+  "name": "MiniCPM5 1B",
+  "path": "models/MiniCPM5-1B-Q4_K_M.gguf",
+  "family": "chatml_bos",
+  "params": 122
+ },
+ {
+  "name": "MiniCPM5 2B",
+  "path": "models/MiniCPM5-2B-Q4_K_M.gguf",
+  "family": "chatml_bos",
+  "params": 122
+ },
+ {
+  "name": "Ministral 3 14B",
+  "path": "models/Ministral-3-14B-Instruct-2512-Q4_K_M.gguf",
   "family": "mistral",
   "params": 122
  },
  {
-  "name": "Mistral MOE 4X7B 24B",
-  "path": "models/Mistral-MOE-4X7B-Dark-MultiVerse-24B-D_AU-Q4_k_m.gguf",
+  "name": "Ministral 3 3B",
+  "path": "models/Ministral-3-3B-Instruct-2512-Q4_K_M.gguf",
   "family": "mistral",
   "params": 122
  },
  {
-  "name": "Mistral Nemo 12B",
-  "path": "models/Mistral-Nemo-Instruct-2407-Q4_K_M.gguf",
+  "name": "Ministral 3 8B",
+  "path": "models/Ministral-3-8B-Instruct-2512-Q4_K_M.gguf",
   "family": "mistral",
   "params": 122
  },
  {
-  "name": "Nanbeige4.2 3B",
-  "path": "models/Nanbeige4.2-3B-Q4_K_M.gguf",
-  "family": null,
+  "name": "Nemotron 30B small",
+  "path": "models/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-Q4_0.gguf",
+  "family": "chatml_inline",
   "params": 122
  },
  {
-  "name": "Phi 4 mini 3.8B",
-  "path": "models/Phi-4-mini-instruct-Q4_K_M.gguf",
-  "family": "phi",
+  "name": "Nemotron 4B",
+  "path": "models/NVIDIA-Nemotron3-Nano-4B-Q4_K_M.gguf",
+  "family": "chatml_inline",
   "params": 122
  },
  {
@@ -168,51 +180,27 @@
   "params": 122
  },
  {
+  "name": "Spark X2.5 4B",
+  "path": "models/Spark-X2.5-4B-Q4_K_M.gguf",
+  "family": "spark",
+  "params": 122
+ },
+ {
   "name": "Supra Router 51M",
   "path": "models/Supra-Router-51M-Q1_0.gguf",
   "family": null,
   "params": 122
  },
  {
-  "name": "UI TARS 1.5 7B",
-  "path": "models/UI-TARS-1.5-7B.Q4_K_M.gguf",
-  "family": "chatml",
-  "params": 122
- },
- {
-  "name": "WeDLM 8B",
-  "path": "models/WeDLM-8B-Instruct-Q4_K_M.gguf",
-  "family": "chatml",
-  "params": 122
- },
- {
-  "name": "diffusiongemma 26B A4B",
-  "path": "models/diffusiongemma-26B-A4B-it-Q4_K_M.gguf",
-  "family": "gemma",
-  "params": 122
- },
- {
-  "name": "falcon 11B",
-  "path": "models/falcon-11B-Q4_K_M.gguf",
-  "family": "chatml",
-  "params": 122
- },
- {
-  "name": "falcon mamba 7B",
-  "path": "models/falcon-mamba-7B-instruct-Q4_K_M.gguf",
-  "family": "chatml",
-  "params": 122
- },
- {
   "name": "gemma 4 12B",
   "path": "models/gemma-4-12b-it-Q4_K_M.gguf",
-  "family": "gemma",
+  "family": "gemma_think",
   "params": 122
  },
  {
   "name": "gemma 4 26B A4B",
   "path": "models/gemma-4-26B-A4B-it-UD-Q4_K_M.gguf",
-  "family": "gemma",
+  "family": "gemma_think",
   "params": 122
  },
  {
@@ -228,63 +216,33 @@
   "params": 122
  },
  {
-  "name": "ggml edge 1.5B",
-  "path": "models/ggml-edge-2B-Q4_K_M.gguf",
-  "family": "chatml_nr",
-  "params": 122
- },
- {
-  "name": "ggml edge 4B",
-  "path": "models/ggml-edge-4B-Q4_K_M.gguf",
-  "family": "chatml",
-  "params": 122
- },
- {
-  "name": "glm 4 9B",
-  "path": "models/glm-4-9b-chat-Q4_K_M.gguf",
-  "family": "glm",
-  "params": 122
- },
- {
   "name": "gpt oss 20B",
   "path": "models/gpt-oss-20b-Q4_K_M.gguf",
+  "family": "gptoss",
+  "params": 122
+ },
+ {
+  "name": "granite 4.2 3b",
+  "path": "models/granite-4.2-3b-Q4_K_M.gguf",
+  "family": "chatml_inline",
+  "params": 122
+ },
+ {
+  "name": "granite 4.2 8b",
+  "path": "models/granite-4.2-8b-Q4_K_M.gguf",
+  "family": "chatml_inline",
+  "params": 122
+ },
+ {
+  "name": "maple preview",
+  "path": "models/maple-preview-TQ2_0-head-Q4_K.gguf",
   "family": "chatml",
   "params": 122
  },
  {
-  "name": "Phi 4 14B",
-  "path": "models/phi-4-Q4_K_M.gguf",
-  "family": "phi",
-  "params": 122
- },
-  {
-  "name": "Nemotron 30B",
-  "path": "models/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-UD-Q4_K_M.gguf",
-  "family": null,
-  "params": 122
- },
- {
-  "name": "Nemotron 30B Bartowski",
-  "path": "models/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-Q4_K_M.gguf",
-  "family": null,
-  "params": 122
- },
-  {
-  "name": "Nemotron 30B small",
-  "path": "models/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-Q4_0.gguf",
-  "family": "chatml",
-  "params": 122
- },
-  {
-  "name": "Nemotron 4B",
-  "path": "models/NVIDIA-Nemotron3-Nano-4B-Q4_K_M.gguf",
-  "family": "chatml",
-  "params": 122
- },
-  {
   "name": "Nemotron 9B",
   "path": "models/nvidia_NVIDIA-Nemotron-Nano-9B-v2-Q4_K_M.gguf",
-  "family": "chatml",
+  "family": "nemotron_v2",
   "params": 122
  }
 ]

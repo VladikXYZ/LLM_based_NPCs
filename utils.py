@@ -10,7 +10,7 @@ from math import inf
 
 from llama_cpp import Llama
 from llama_cpp.llama_chat_format import Jinja2ChatFormatter
-from chat_templates import EOS_TOKENS, INFERENCE_TYPES, WARMUP_TYPES
+from chat_templates import EOS_TOKENS, BOS_FAMILIES, INFERENCE_TYPES, WARMUP_TYPES
 
 DEVICES_FILE = "data/devices.json"
 MODELS_FILE = "data/models.json"
@@ -111,36 +111,34 @@ def get_models():
     return usable
 
 
-def get_handlers(family: str, custom: bool, reason: bool):
+def get_handlers(family: str, custom: bool, reason: bool, bos_token: str = ""):
     if not family or not custom: return None, None
-    infer = INFERENCE_TYPES[reason]
-    warmup = WARMUP_TYPES[reason]
+    bos = bos_token if family in BOS_FAMILIES else ""
 
-    handler_inference = Jinja2ChatFormatter(
-        template=infer[family],
-        eos_token=EOS_TOKENS[family],
-        bos_token=""
-    ).to_chat_handler()
-
-    if family == "chatml":
-        handler_warmup = Jinja2ChatFormatter(
-            template=warmup,
+    def handler(template):
+        return Jinja2ChatFormatter(
+            template=template,
             eos_token=EOS_TOKENS[family],
-            bos_token=""
+            bos_token=bos
         ).to_chat_handler()
 
-        return handler_inference, handler_warmup
-    return handler_inference, None
+    return handler(INFERENCE_TYPES[reason][family]), handler(WARMUP_TYPES[reason][family])
+
+
+def get_bos_token(llm):
+    bos_id = llm.token_bos()
+    return llm._model.token_get_text(bos_id) if bos_id != -1 else ""
+
+
+def set_reasoning(llm, model, custom_jinja, reason):
+    """Switch a loaded model between the normal and the mini reasoning template."""
+    infer, _ = get_handlers(model["family"], custom_jinja, reason, get_bos_token(llm))
+    if infer: llm.chat_handler = infer
 
 
 def load_llm(model, llm_kwargs, warmup_inputs=[{"role":"user", "content":"warmup!"}], custom_jinja=False, reason = False, log = False):
     print(f"Loading {model["name"]} | ", end="", flush=True)
 
-    infer, warmup = get_handlers(model["family"], custom_jinja, reason)
-    if warmup:
-        llm_kwargs["chat_handler"] = warmup
-    elif infer:
-        llm_kwargs["chat_handler"] = infer
     llm, err = None, None
     with Silencer():
         try:
@@ -149,8 +147,11 @@ def load_llm(model, llm_kwargs, warmup_inputs=[{"role":"user", "content":"warmup
             print(f"Loaded! | ", end="", flush=True)
 
             try:
+                # custom templates are not given the BOS token automatically, so it is read from the model
+                infer, warmup = get_handlers(model["family"], custom_jinja, reason, get_bos_token(llm))
+                if warmup: llm.chat_handler = warmup
                 llm.create_chat_completion(warmup_inputs, max_tokens=1)
-                if warmup: llm.chat_handler = infer
+                if infer: llm.chat_handler = infer
                 print("Warmuped!!", flush=True)
                 return llm
 

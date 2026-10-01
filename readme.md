@@ -100,4 +100,16 @@ python bench.py    # benchmark
 
 Models are `.gguf` files in `models/` that are listed in `data/models.json` (matched by `path`). The Supra model (`Supra-Router-51M-Q1_0.gguf`) is included by default, so you can check that everything works by running `python bench.py 0` (device `0` from the device list). It is a tiny router model, so its output is not meaningful chat; it only verifies the install. Download other GGUF models into `models/` to use them.
 
+### Mini reasoning
+
+In mini reasoning mode the NPC is told to write a brief plan, then one `<speech>` separator, then what it says:
+`Brief response plan <speech> Spoken dialogue`. The reply is split into a plan and a dialogue (`npc_runtime.py`),
+the format is checked, and both the time to the first output and the time to the dialogue are measured.
+
+* `python chat.py` asks whether to use it, and `/mini` switches it during the chat (the conversation restarts).
+  The raw stream shows the plan, the NPC dialogue is printed separately.
+* `python bench.py 0 --mini` benchmarks it. The `DIALOGUE TTFT` and `FORMAT OK` columns hold the result (`-1` and `0` for a wrong format).
+
+`python test_templates.py` and `python test_npc_runtime.py` check the templates and the parsing without a model.
+
 > **Windows:** if output is piped/redirected and Python crashes with `UnicodeEncodeError`, set `PYTHONUTF8=1`.
