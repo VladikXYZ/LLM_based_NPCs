@@ -141,3 +141,11 @@ TEMPLATES = {
         end="<|end|>",
     ),
 }
+
+
+if __name__ == "__main__":
+    # export the templates: python chat_templates.py
+    import json
+    with open("data/chat_templates.json", "w", encoding="utf-8") as f:
+        json.dump(TEMPLATES, f, indent=1, ensure_ascii=False)
+    print(f"Saved {len(TEMPLATES)} families to data/chat_templates.json")
