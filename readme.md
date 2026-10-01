@@ -48,8 +48,10 @@ source venv/bin/activate
 #### Windows 11
 Open **"x64 Native Tools Command Prompt for VS 2022"** (so the compiler is on PATH), `cd` into the repo, activate the venv, then run in PowerShell:
 ```powershell
-$env:CMAKE_ARGS="-DGGML_VULKAN=on"; pip install llama-cpp-python --force-reinstall --upgrade --no-cache-dir --no-binary llama-cpp-python
+$env:CMAKE_ARGS="-DGGML_VULKAN=on -GNinja"; pip install llama-cpp-python --force-reinstall --upgrade --no-cache-dir --no-binary llama-cpp-python
 ```
+`-GNinja` makes the build use Ninja, which compiles in parallel on all CPU cores. Install it with `pip install ninja` if `ninja --version` fails.
+
 > **Path-length error?** If pip fails with `No such file or directory` on a very long path
 > (`vendor/llama.cpp/tools/ui/...`), either enable Windows long paths or use a short temp directory:
 > ```powershell
