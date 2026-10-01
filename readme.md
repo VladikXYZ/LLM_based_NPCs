@@ -112,4 +112,6 @@ the format is checked, and both the time to the first output and the time to the
 
 `python test_templates.py` and `python test_npc_runtime.py` check the templates and the parsing without a model.
 
+`python check_models.py 0` talks to every model in `models/` for a few turns in both modes and prints one table: BOS token, plain replies, replies that stop by themselves, KV cache reuse and the mini reasoning format. The columns are described at the top of the script.
+
 > **Windows:** if output is piped/redirected and Python crashes with `UnicodeEncodeError`, set `PYTHONUTF8=1`.
