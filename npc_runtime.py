@@ -1,24 +1,22 @@
 """Mini reasoning: parsing of "plan <speech> dialogue" replies and streaming with timings."""
-import re
 import time
 from dataclasses import dataclass
 
 SEPARATOR = "<speech>"
-# A native thinking block in front of the reply is not part of the mini reasoning format.
-NATIVE_THINKING = re.compile(r"^\s*<think>.*?</think>", re.DOTALL)
+# The model's own reasoning is switched off, so any of its tags in a reply makes the reply invalid.
+REASONING_TAGS = ("<think>", "</think>", "<|channel>", "<channel|>")
 
 
 def split_response(raw, mini=False):
     """Return (plan, dialogue, format_ok). A malformed reply never yields dialogue."""
-    text = NATIVE_THINKING.sub("", raw, count=1)
-    if "<think>" in text or "</think>" in text:
+    if any(tag in raw for tag in REASONING_TAGS):
         return "", "", False
     if not mini:
-        ok = bool(text.strip()) and SEPARATOR not in text
-        return "", text.strip() if ok else "", ok
-    if text.count(SEPARATOR) != 1:
+        ok = bool(raw.strip()) and SEPARATOR not in raw
+        return "", raw.strip() if ok else "", ok
+    if raw.count(SEPARATOR) != 1:
         return "", "", False
-    plan, dialogue = (part.strip() for part in text.split(SEPARATOR))
+    plan, dialogue = (part.strip() for part in raw.split(SEPARATOR))
     # some models close the separator even though only the opening one is asked for
     if dialogue.endswith("</speech>"):
         dialogue = dialogue[:-len("</speech>")].rstrip()

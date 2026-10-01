@@ -15,18 +15,15 @@ class FakeLlm:
 def test_split_mini():
     assert split_response("He wants a sword. <speech> Ten gold.", True) == ("He wants a sword.", "Ten gold.", True)
     assert split_response("plan<speech>hello</speech>", True) == ("plan", "hello", True)
-    # a native thinking block in front is not part of the format
-    assert split_response("<think>\n\n</think>\n\nplan <speech> hello", True) == ("plan", "hello", True)
     for bad in ("", "plan only", "<speech>hello", "plan<speech>", "p<speech>x<speech>y",
-                "p<speech>x</speech>extra", "<think>never closed plan <speech> x", "p <speech> x </think>"):
+                "p<speech>x</speech>extra", "<think>p</think>plan <speech> hello", "p <speech> x <channel|>"):
         plan, dialogue, ok = split_response(bad, True)
         assert not ok and dialogue == "", bad
 
 
 def test_split_off():
     assert split_response(" Ten gold. ") == ("", "Ten gold.", True)
-    assert split_response("<think>hm</think>Ten gold.") == ("", "Ten gold.", True)
-    for bad in ("", "   ", "plan <speech> hello", "<think>never closed"):
+    for bad in ("", "   ", "plan <speech> hello", "<think>hm</think>Ten gold.", "I should answer.<channel|>Ten gold."):
         assert split_response(bad) == ("", "", False), bad
 
 
