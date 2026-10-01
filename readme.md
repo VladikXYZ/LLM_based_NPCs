@@ -8,6 +8,9 @@ This repository contains the configuration and logic to run **llama-cpp-python**
 
 *   **Python 3.12+**
     *   Ensure Python is installed and added to your system PATH.
+*   **C++ compiler** (llama-cpp-python is built from source)
+    *   Windows: [Visual Studio Build Tools](https://visualstudio.microsoft.com/downloads/) with the **Desktop development with C++** workload.
+    *   Linux: `build-essential` (or your distro's equivalent).
 *   **Vulkan SDK** (Tested on 1.4.341.1)
     *   [Download here](https://vulkan.lunarg.com/sdk/home) if not installed. Verify your installation with:
     ```bash
@@ -25,13 +28,35 @@ This repository contains the configuration and logic to run **llama-cpp-python**
     ```bash
     cmake --version
     ```
-* **venv:** Create virtual environment
+    *   Visual Studio's bundled CMake also works (it is available inside the Developer Prompt below).
 
-### Windows 11
-Install llama-cpp-python with this command:
+### 1. Create and activate a virtual environment
+
+Windows:
+```powershell
+python -m venv venv
+venv\Scripts\activate
+```
+Linux:
+```bash
+python3 -m venv venv
+source venv/bin/activate
+```
+
+### 2. Install llama-cpp-python with Vulkan
+
+#### Windows 11
+Open **"x64 Native Tools Command Prompt for VS 2022"** (so the compiler is on PATH), `cd` into the repo, activate the venv, then run in PowerShell:
 ```powershell
 $env:CMAKE_ARGS="-DGGML_VULKAN=on"; pip install llama-cpp-python --force-reinstall --upgrade --no-cache-dir --no-binary llama-cpp-python
 ```
+> **Path-length error?** If pip fails with `No such file or directory` on a very long path
+> (`vendor/llama.cpp/tools/ui/...`), either enable Windows long paths or use a short temp directory:
+> ```powershell
+> mkdir C:\t; $env:TMP="C:\t"; $env:TEMP="C:\t"
+> ```
+> then re-run the install command.
+
 <!--
 Otherwise add location of VulkanSDK:
 ```powershell
@@ -40,20 +65,37 @@ $env:CMAKE_ARGS="-DGGML_VULKAN=on -DVulkan_SDK='C:\VulkanSDK\1.4.341.1' -DVulkan
 -->
 ---
 
-### 🐧 Linux Setup (Ubuntu 24.04 and CachyOS)
-Install llama-cpp-python with this command:
+#### 🐧 Linux (Ubuntu 24.04 and CachyOS)
+Vulkan:
 ```bash
 export CMAKE_ARGS="-DGGML_VULKAN=on"
 pip install llama-cpp-python --force-reinstall --upgrade --no-cache-dir --no-binary llama-cpp-python
 ```
-Install llama-cpp-python using ninja with this command:
+Vulkan, using ninja:
 ```bash
 CMAKE_ARGS="-DGGML_VULKAN=on -GNinja" pip install llama-cpp-python --force-reinstall --upgrade --no-cache-dir --no-binary llama-cpp-python
 ```
-
-Install llama-cpp-python using ninja with this command:
+CUDA (NVIDIA only), using ninja:
 ```bash
 CMAKE_ARGS="-DGGML_CUDA=on -GNinja" pip install llama-cpp-python --force-reinstall --upgrade --no-cache-dir --no-binary llama-cpp-python
 ```
 
 ---
+
+### 3. Install the remaining dependencies
+```bash
+pip install -r requirements.txt
+```
+
+### 4. Run
+
+On first launch the scripts scan for devices (CPU and every Vulkan GPU) and cache them in `data/devices.json`. Delete that file to re-scan.
+
+```bash
+python chat.py     # interactive chat: pick a device and a model
+python bench.py    # benchmark
+```
+
+Models are `.gguf` files in `models/` that are listed in `data/models.json` (matched by `path`). The Supra model (`Supra-Router-51M-Q1_0.gguf`) is included by default, so you can check that everything works by running `python bench.py 0` (device `0` from the device list). It is a tiny router model, so its output is not meaningful chat; it only verifies the install. Download other GGUF models into `models/` to use them.
+
+> **Windows:** if output is piped/redirected and Python crashes with `UnicodeEncodeError`, set `PYTHONUTF8=1`.
