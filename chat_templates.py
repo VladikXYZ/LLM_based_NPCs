@@ -24,7 +24,7 @@ _TEMPLATE = """{{- bos_token -}}
         {%- if message.role == 'user' -%}
             {{- __USER_OPEN__ + message.content + __USER_CLOSE__ -}}
         {%- elif message.role == 'assistant' -%}
-            {{- __ASSISTANT__ + message.content + __END__ -}}
+            {{- __HISTORY__ + message.content + __END__ -}}
         {%- endif -%}
     {%- endfor -%}
     {{- __ASSISTANT__ -}}
@@ -32,13 +32,14 @@ _TEMPLATE = """{{- bos_token -}}
 """
 
 
-def _family(bos, eos, system, user, assistant, end):
+def _family(bos, eos, system, user, assistant, end, history=None):
     """Build one entry of TEMPLATES.
 
     system     - (open, close) around "<npc system message>\\n\\n<shared rule>"
     user       - (open, close) around a user message
     assistant  - generation prompt; it is also what precedes every past assistant message
     end        - what closes a past assistant message
+    history    - what precedes a past assistant message, when it differs from the generation prompt
     The model's own reasoning is never used: the "assistant" prefix switches it off (empty think block).
     The prefix is also used for past assistant messages, so every new prompt starts with exactly
     the tokens that are already in the KV cache (prompt + generated reply).
@@ -49,6 +50,7 @@ def _family(bos, eos, system, user, assistant, end):
             "__SYS_OPEN__": system[0], "__SYS_CLOSE__": system[1],
             "__USER_OPEN__": user[0], "__USER_CLOSE__": user[1],
             "__ASSISTANT__": assistant, "__END__": end,
+            "__HISTORY__": assistant if history is None else history,
         }
         template = _TEMPLATE
         for key, value in values.items():
@@ -91,12 +93,14 @@ TEMPLATES = {
         assistant="<|start_header_id|>assistant<|end_header_id|>\n\n",
         end="<|eot_id|>",
     ),
-    # gemma 4
+    # gemma 4: the reply starts after an empty thought channel, past replies have none (as in gemma's own template).
+    # The KV cache is therefore cut back to the start of the last reply on every turn.
     "gemma": _family(
         bos="<bos>", eos="<turn|>",
         system=("<|turn>system\n", "<turn|>\n"),
         user=("<|turn>user\n", "<turn|>\n"),
-        assistant="<|turn>model\n",
+        assistant="<|turn>model\n<|channel>thought\n<channel|>",
+        history="<|turn>model\n",
         end="<turn|>\n",
     ),
     # Ministral 3

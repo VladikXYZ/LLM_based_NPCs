@@ -8,6 +8,8 @@ import chat_templates as ct
 ENV = ImmutableSandboxedEnvironment(trim_blocks=True, lstrip_blocks=True)
 SYSTEM = {"role": "system", "content": "You are Garrick."}
 TURNS = [("Hello", "Greetings."), ("What do you sell?", "Swords."), ("How much?", "Ten gold.")]
+# the part of a generation prompt that does not precede past replies
+GENERATION_ONLY = {"gemma": "<|channel>thought\n<channel|>"}
 
 
 def render(family, reason, messages, add_generation_prompt=True):
@@ -37,7 +39,8 @@ def test_kv_cache_prefix():
                 messages.append({"role": "user", "content": question})
                 prompt = render(family, reason, messages)
                 assert prompt.startswith(cached), (family, reason, cached, prompt)
-                cached = prompt + answer
+                # gemma is the exception: its empty thought channel is not kept in the history
+                cached = prompt.removesuffix(GENERATION_ONLY.get(family, "")) + answer
                 messages.append({"role": "assistant", "content": answer})
 
 

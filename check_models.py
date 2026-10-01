@@ -7,7 +7,7 @@ Columns of the final table:
               WANTED: the family has none, yet the model asks for one
     REPLY   - normal mode: replies that are plain dialogue (not empty, no <think> or | in them)
     STOP    - normal mode: replies that ended by themselves, before MAX_TOKENS
-    CACHE   - normal mode: turns whose prompt reused everything that was in the KV cache
+    CACHE   - normal mode: turns that reused the previous prompt from the KV cache
     MINI    - mini reasoning: replies in the "plan | dialogue" format
     MCACHE  - mini reasoning: as CACHE, the first turn is skipped because the template has just changed
 """
@@ -28,6 +28,7 @@ RESET = "\033[0m"
 
 CONTEXT_SIZE = 4096
 MAX_TOKENS = 200
+CACHE_TOLERANCE = 8
 CUSTOM_JINJA = True
 QUESTIONS = ["Hello, who are you?", "What do you want from me?", "Where do you live?"]
 with open("data/data_3npcs.json") as file: NPC = json.load(file)[2]
@@ -42,11 +43,13 @@ def system_message(model, mini):
 
 def watch_cache(llm):
     """Record how many cached tokens are kept when a prompt is evaluated."""
-    seen = {"reused": None}
+    seen = {"reused": None, "prompt": llm.n_tokens}
     original = llm.eval
 
     def eval_tokens(tokens):
-        if seen["reused"] is None: seen["reused"] = llm.n_tokens
+        if seen["reused"] is None:
+            seen["reused"] = llm.n_tokens
+            seen["prompt"] = llm.n_tokens + len(tokens)
         return original(tokens)
 
     llm.eval = eval_tokens
@@ -58,10 +61,12 @@ def converse(llm, model, mini, cache):
     turns = []
     for question in QUESTIONS:
         history.append({"role": "user", "content": question})
-        cached, cache["reused"] = llm.n_tokens, None
+        previous_prompt, cache["reused"] = cache["prompt"], None
         result = npc_runtime.generate(llm, history, mini, MAX_TOKENS)
         history.append({"role": "assistant", "content": result.raw})
-        turns.append((result, cached > 0 and cache["reused"] == cached))
+        # a hit keeps the previous prompt; gemma drops the few tokens of its empty thought channel
+        hit = cache["reused"] is not None and 0 < previous_prompt - CACHE_TOLERANCE <= cache["reused"]
+        turns.append((result, hit))
         shown = result.raw.replace("\n", " ")
         print(f"   {GREY}{question}{RESET} {shown[:150]}{'...' if len(shown) > 150 else ''}")
     return turns
