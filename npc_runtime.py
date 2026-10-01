@@ -1,8 +1,9 @@
-"""Mini reasoning: parsing of "plan <speech> dialogue" replies and streaming with timings."""
+"""Mini reasoning: parsing of "plan | dialogue" replies and streaming with timings."""
 import time
 from dataclasses import dataclass
 
-SEPARATOR = "<speech>"
+from chat_templates import MINI_SEPARATOR as SEPARATOR
+
 # The model's own reasoning is switched off, so any of its tags in a reply makes the reply invalid.
 REASONING_TAGS = ("<think>", "</think>", "<|channel>", "<channel|>")
 
@@ -17,10 +18,7 @@ def split_response(raw, mini=False):
     if raw.count(SEPARATOR) != 1:
         return "", "", False
     plan, dialogue = (part.strip() for part in raw.split(SEPARATOR))
-    # some models close the separator even though only the opening one is asked for
-    if dialogue.endswith("</speech>"):
-        dialogue = dialogue[:-len("</speech>")].rstrip()
-    ok = bool(plan and dialogue) and "</speech>" not in plan and "</speech>" not in dialogue
+    ok = bool(plan and dialogue)
     return plan, dialogue if ok else "", ok
 
 
@@ -31,7 +29,7 @@ class Generation:
     dialogue: str = ""
     format_ok: bool = False
     ttft: float = -1           # seconds to the first output
-    dialogue_ttft: float = -1  # seconds to the first dialogue (after <speech> in mini mode), -1 if the format is wrong
+    dialogue_ttft: float = -1  # seconds to the first dialogue (after the separator in mini mode), -1 if the format is wrong
     total_time: float = -1
     chunks: int = 0
 

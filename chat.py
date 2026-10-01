@@ -45,7 +45,7 @@ class InteractiveChat:
         mod_idx = int(mod_choice.split("|")[0])
         self.model = self.models[mod_idx]
 
-        # 3. Select mini reasoning (plan <speech> dialogue); '/mini' toggles it during the chat
+        # 3. Select mini reasoning (plan | dialogue); '/mini' toggles it during the chat
         self.mini = questionary.confirm("Mini reasoning?", default=False, qmark="💭").ask()
         if self.mini is None: sys.exit("Exiting...")
 
@@ -120,7 +120,7 @@ class InteractiveChat:
                         print(f"{BLUE}NPC:{RESET} {result.dialogue}")
                         print(f"{GREY}first output {result.ttft:.2f} s | dialogue {result.dialogue_ttft:.2f} s{RESET}")
                     else:
-                        print(f"{RED}Format error: expected 'plan <speech> dialogue'{RESET}")
+                        print(f"{RED}Format error: expected 'plan | dialogue'{RESET}")
 
                 # The raw response goes to history, so the next prompt matches the KV cache
                 chat_history.append({"role": "assistant", "content": result.raw})

@@ -4,10 +4,10 @@
 
 Columns of the final table:
     BOS     - the prompt starts with the BOS token (only for the models that want one)
-    REPLY   - normal mode: replies that are plain dialogue (not empty, no <think> or <speech> in them)
+    REPLY   - normal mode: replies that are plain dialogue (not empty, no <think> or | in them)
     STOP    - normal mode: replies that ended by themselves, before MAX_TOKENS
     CACHE   - normal mode: turns whose prompt reused everything that was in the KV cache
-    MINI    - mini reasoning: replies in the "plan <speech> dialogue" format
+    MINI    - mini reasoning: replies in the "plan | dialogue" format
     MCACHE  - mini reasoning: as CACHE, the first turn is skipped because the template has just changed
 """
 import json

@@ -13,24 +13,24 @@ class FakeLlm:
 
 
 def test_split_mini():
-    assert split_response("He wants a sword. <speech> Ten gold.", True) == ("He wants a sword.", "Ten gold.", True)
-    assert split_response("plan<speech>hello</speech>", True) == ("plan", "hello", True)
-    for bad in ("", "plan only", "<speech>hello", "plan<speech>", "p<speech>x<speech>y",
-                "p<speech>x</speech>extra", "<think>p</think>plan <speech> hello", "p <speech> x <channel|>"):
+    assert split_response("He wants a sword. | Ten gold.", True) == ("He wants a sword.", "Ten gold.", True)
+    assert split_response("plan|hello", True) == ("plan", "hello", True)
+    for bad in ("", "plan only", "|hello", "plan|", "p|x|y",
+                "<think>p</think>plan | hello", "p | x <channel|>", "p | x<|im_end|>"):
         plan, dialogue, ok = split_response(bad, True)
         assert not ok and dialogue == "", bad
 
 
 def test_split_off():
     assert split_response(" Ten gold. ") == ("", "Ten gold.", True)
-    for bad in ("", "   ", "plan <speech> hello", "<think>hm</think>Ten gold.", "I should answer.<channel|>Ten gold."):
+    for bad in ("", "   ", "plan | hello", "<think>hm</think>Ten gold.", "I should answer.<channel|>Ten gold."):
         assert split_response(bad) == ("", "", False), bad
 
 
 def test_generate_mini():
     seen = []
-    result = generate(FakeLlm([" ", "He wants", " a sword. <speech>", " ", "Ten", " gold."]), [], mini=True, on_text=seen.append)
-    assert result.raw == "".join(seen) == " He wants a sword. <speech> Ten gold."
+    result = generate(FakeLlm([" ", "He wants", " a sword. |", " ", "Ten", " gold."]), [], mini=True, on_text=seen.append)
+    assert result.raw == "".join(seen) == " He wants a sword. | Ten gold."
     assert (result.plan, result.dialogue, result.format_ok) == ("He wants a sword.", "Ten gold.", True)
     assert 0 <= result.ttft <= result.dialogue_ttft <= result.total_time
     assert result.chunks == 6

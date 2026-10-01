@@ -22,7 +22,7 @@ LOG_DIR = ""
 with open("data/test.json", "r") as f: MESSAGES = json.load(f)
 with open("data/data_3npcs.json") as file: NPC = json.load(file)[2]
 CUSTOM_JINJA = False
-# mini reasoning (plan <speech> dialogue): set True here or pass --mini
+# mini reasoning (plan | dialogue): set True here or pass --mini
 REASON = False
 if "--mini" in sys.argv:
     sys.argv.remove("--mini")
