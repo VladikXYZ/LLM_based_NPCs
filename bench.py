@@ -19,8 +19,8 @@ LOG_DIR = ""
 # os.makedirs(LOG_DIR, exist_ok=True)
 with open("data/test.json", "r") as f: MESSAGES = json.load(f)
 with open("data/data_3npcs.json") as file: NPC = json.load(file)[2]
-CUSTOM_JINJA = False
-REASON = False
+CUSTOM_JINJA = True
+REASON = True
 if CUSTOM_JINJA:
     CHAT_HISTORY = [{"role": "system", "content": NPC["role"]}]
     WARMUP = CHAT_HISTORY[:]
@@ -66,8 +66,8 @@ class Benchmarker:
         dev_name = self.device["type"] + "_" + "_".join(self.device["name"].split())
 
         log = []
-        self.models = sorted([os.path.basename(x) for x in os.listdir(utils.MODELS_DIRECTORY) if x.endswith(".gguf")],key=os.path.basename)
-        self.models = [{"family": None, "name": x, "path": utils.MODELS_DIRECTORY+"/"+x} for x in self.models]
+        # self.models = sorted([os.path.basename(x) for x in os.listdir(utils.MODELS_DIRECTORY) if x.endswith(".gguf")],key=os.path.basename)
+        # self.models = [{"family": None, "name": x, "path": utils.MODELS_DIRECTORY+"/"+x} for x in self.models]
         num_models = len(self.models)
         test_start = time.perf_counter()
         chat_history = CHAT_HISTORY[:]

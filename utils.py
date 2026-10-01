@@ -10,7 +10,7 @@ from math import inf
 
 from llama_cpp import Llama
 from llama_cpp.llama_chat_format import Jinja2ChatFormatter
-from chat_templates import EOS_TOKENS, INFERENCE_TYPES, WARMUP_TYPES
+from chat_templates import EOS_TOKENS, INFERENCE_TYPES, WARMUP_TYPES, TEMPLATES_INFERENCE
 
 DEVICES_FILE = "data/devices.json"
 MODELS_FILE = "data/models.json"
@@ -111,25 +111,24 @@ def get_models():
     return usable
 
 
+with open("data/chat_templates.json") as f:
+    TEMPLATES = json.load(f)
+
 def get_handlers(family: str, custom: bool, reason: bool):
     if not family or not custom: return None, None
-    infer = INFERENCE_TYPES[reason]
-    warmup = WARMUP_TYPES[reason]
 
-    handler_inference = Jinja2ChatFormatter(
-        template=infer[family],
-        eos_token=EOS_TOKENS[family],
-        bos_token=""
-    ).to_chat_handler()
+    style = TEMPLATES[family]
+    handler_inference = Jinja2ChatFormatter(template=style["template"][reason], eos_token=style["eos"],
+                                            bos_token=style["bos"]).to_chat_handler()
 
-    if family == "chatml":
-        handler_warmup = Jinja2ChatFormatter(
-            template=warmup,
-            eos_token=EOS_TOKENS[family],
-            bos_token=""
-        ).to_chat_handler()
-
-        return handler_inference, handler_warmup
+    # if family == "chatml":
+    #     handler_warmup = Jinja2ChatFormatter(
+    #         template=warmup,
+    #         eos_token=EOS_TOKENS[family],
+    #         bos_token=""
+    #     ).to_chat_handler()
+    #
+    #     return handler_inference, handler_warmup
     return handler_inference, None
 
 
@@ -177,26 +176,32 @@ def load_llm(model, llm_kwargs, warmup_inputs=[{"role":"user", "content":"warmup
 
 if __name__ == '__main__':
     pass
-    # models = sorted([os.path.basename(x) for x in os.listdir(MODELS_DIRECTORY) if x.endswith(".gguf")],key=os.path.basename)
-    # print(models)
-    # reals = set([f"models/{x}" for x in models])
-    # print(reals)
-    # models_dicts = []
-    # for model in models:
-    #     name = model.lower()
-    #     if "gemma" in name: family = "gemma"
-    #     elif "phi" in name: family = "phi"
-    #     elif "llama" in name: family = "llama"
-    #     elif "mistral" in name: family = "mistral"
-    #     elif "glm" in name: family = "glm"
-    #     elif any(k in name for k in ["qwen", "lfm", "bonsai", "jan", "falcon", "diffucoder", "tars", "wedlm", "ggml", "gpt"]):
-    #         family = "chatml"
-    #     else: family = None
-    #     m_dict = {"name": model.replace("-", " "), "path": f"models/{model}.gguf", "family": family, "params": 122}
-    #     models_dicts.append(m_dict)
-    #
-    # with open(MODELS_FILE, "w") as f:
-    #     json.dump(models_dicts, f, indent=1)
+    models = sorted([os.path.basename(x) for x in os.listdir(MODELS_DIRECTORY) if x.endswith(".gguf")],key=os.path.basename)
+    print(models)
+    reals = set([f"models/{x}" for x in models])
+    print(reals)
+    models_dicts = []
+    for model in models:
+        name = model.lower().split(".")[:-1]
+        name = "".join(name)
+        print(name)
+        if "gemma" in name: family = "gemma"
+        elif "gpt" in name: family = "gptoss"
+        elif "spark" in name:
+            family = "spark"
+        elif "llama" in name: family = "llama"
+        elif "ministral" in name: family = "mistral"
+        elif "glm" in name: family = "glm"
+        elif any(k in name for k in ["qwen", "bonsai", "gpt", "nemotron", "ling", "spark", "granite", "minicpm", "maple"]):
+            family = "chatml"
+        elif any(k in name for k in ["lfm"]):
+            family = "chatml_nr"
+        else: family = None
+        m_dict = {"name": name.replace("-", " "), "path": f"models/{model}", "family": family, "params": 122}
+        models_dicts.append(m_dict)
+
+    with open(MODELS_FILE, "w") as f:
+        json.dump(models_dicts, f, indent=1)
 
     # with open("models/backup.json", "r") as f:
     #     models_dicts = json.load(f)
