@@ -10,56 +10,35 @@ MINI_REASONING_RULE = ("OUTPUT FORMAT, mandatory in every reply: "
 REASONING_SHARED_RPG_RULE = SHARED_RPG_RULE + " " + MINI_REASONING_RULE
 
 # One entry per prompt format. Every template is built from these pieces:
-#   bos        - True if the model's own template starts with its BOS token
 #   system     - (open, close) around "<npc system message>\n\n<shared rule>"
 #   user       - (open, close) around a user message
 #   assistant  - generation prompt; it is also what precedes every past assistant message
 #   end        - what closes a past assistant message
 #   eos        - stop string
+# The BOS token is not part of a family: utils adds it for the models that want one.
 # The model's own reasoning is never used: the "assistant" prefix switches it off (empty think block),
 # in the normal and in the mini reasoning templates alike.
 # The prefix is also used for past assistant messages, so every new prompt starts with exactly
 # the tokens that are already in the KV cache (prompt + generated reply).
 FAMILIES = {
-    # Qwen3.5, Qwen3.6, Bonsai, maple
+    # Qwen3.5, Qwen3.6, Bonsai, maple, MiniCPM5, LFM2.5-2.6B, Nemotron 3.5 Lightning, Nemotron3 Nano, granite 4.2
     "chatml": {
-        "bos": False,
         "system": ("<|im_start|>system\n", "<|im_end|>\n"),
         "user": ("<|im_start|>user\n", "<|im_end|>\n"),
         "assistant": "<|im_start|>assistant\n<think>\n\n</think>\n\n",
         "end": "<|im_end|>\n",
         "eos": "<|im_end|>",
     },
-    # MiniCPM5, LFM2.5-2.6B (chatml with BOS and a think block)
-    "chatml_bos": {
-        "bos": True,
-        "system": ("<|im_start|>system\n", "<|im_end|>\n"),
-        "user": ("<|im_start|>user\n", "<|im_end|>\n"),
-        "assistant": "<|im_start|>assistant\n<think>\n\n</think>\n\n",
-        "end": "<|im_end|>\n",
-        "eos": "<|im_end|>",
-    },
-    # LFM2, LFM2.5 without reasoning (chatml with BOS, no think block)
+    # LFM2, LFM2.5 without reasoning (no think block)
     "chatml_nr": {
-        "bos": True,
         "system": ("<|im_start|>system\n", "<|im_end|>\n"),
         "user": ("<|im_start|>user\n", "<|im_end|>\n"),
         "assistant": "<|im_start|>assistant\n",
         "end": "<|im_end|>\n",
         "eos": "<|im_end|>",
     },
-    # Nemotron 3.5 Lightning, Nemotron3 Nano, granite 4.2 (chatml, think block without newlines)
-    "chatml_inline": {
-        "bos": False,
-        "system": ("<|im_start|>system\n", "<|im_end|>\n"),
-        "user": ("<|im_start|>user\n", "<|im_end|>\n"),
-        "assistant": "<|im_start|>assistant\n<think></think>",
-        "end": "<|im_end|>\n",
-        "eos": "<|im_end|>",
-    },
     # Nemotron Nano 9B v2
     "nemotron_v2": {
-        "bos": False,
         "system": ("<SPECIAL_10>System\n", "\n"),
         "user": ("<SPECIAL_11>User\n", "\n"),
         "assistant": "<SPECIAL_11>Assistant\n<think></think>",
@@ -67,7 +46,6 @@ FAMILIES = {
         "eos": "<SPECIAL_12>",
     },
     "llama": {
-        "bos": True,
         "system": ("<|start_header_id|>system<|end_header_id|>\n\n", "<|eot_id|>"),
         "user": ("<|start_header_id|>user<|end_header_id|>\n\n", "<|eot_id|>"),
         "assistant": "<|start_header_id|>assistant<|end_header_id|>\n\n",
@@ -76,7 +54,6 @@ FAMILIES = {
     },
     # gemma 4
     "gemma": {
-        "bos": True,
         "system": ("<|turn>system\n", "<turn|>\n"),
         "user": ("<|turn>user\n", "<turn|>\n"),
         "assistant": "<|turn>model\n",
@@ -85,33 +62,21 @@ FAMILIES = {
     },
     # Ministral 3
     "mistral": {
-        "bos": True,
         "system": ("[SYSTEM_PROMPT]", "[/SYSTEM_PROMPT]"),
         "user": ("[INST]", "[/INST]"),
         "assistant": "",
         "end": "</s>",
         "eos": "</s>",
     },
-    # GLM 4.7 Flash
+    # GLM 4.7 Flash, GLM 4.6V Flash
     "glm": {
-        "bos": False,
         "system": ("[gMASK]<sop><|system|>", ""),
         "user": ("<|user|>", ""),
-        "assistant": "<|assistant|></think>",
-        "end": "",
-        "eos": "<|user|>",
-    },
-    # GLM 4.6V Flash
-    "glm_v": {
-        "bos": False,
-        "system": ("[gMASK]<sop><|system|>\n", ""),
-        "user": ("<|user|>\n", "/nothink"),
-        "assistant": "<|assistant|>\n<think></think>\n",
+        "assistant": "<|assistant|><think></think>",
         "end": "",
         "eos": "<|user|>",
     },
     "ling": {
-        "bos": False,
         "system": ("<role>SYSTEM</role>", "\ndetailed thinking off<|role_end|>"),
         "user": ("<role>HUMAN</role>", "<|role_end|>"),
         "assistant": "<role>ASSISTANT</role>\n<think></think>",
@@ -119,7 +84,6 @@ FAMILIES = {
         "eos": "<|role_end|>",
     },
     "spark": {
-        "bos": False,
         "system": ("<｜start▁of▁sentence｜><|System|>\n", "<｜end▁of▁sentence｜>"),
         "user": ("<｜start▁of▁sentence｜><|User|>", "<｜end▁of▁sentence｜>"),
         "assistant": "<｜start▁of▁sentence｜><|Bot|></think>",
@@ -128,7 +92,6 @@ FAMILIES = {
     },
     # gpt-oss (harmony): the analysis channel is skipped by opening the final channel directly
     "gptoss": {
-        "bos": False,
         "system": ("<|start|>system<|message|>You are ChatGPT, a large language model trained by OpenAI.\n"
                    "Knowledge cutoff: 2024-06\n\nReasoning: low\n\n"
                    "# Valid channels: analysis, commentary, final. Channel must be included for every message.<|end|>"
@@ -137,14 +100,6 @@ FAMILIES = {
         "assistant": "<|start|>assistant<|channel|>final<|message|>",
         "end": "<|end|>",
         "eos": "<|return|>",
-    },
-    "phi": {
-        "bos": False,
-        "system": ("<|system|>", "<|end|>"),
-        "user": ("<|user|>", "<|end|>"),
-        "assistant": "<|assistant|>",
-        "end": "<|end|>",
-        "eos": "<|end|>",
     },
 }
 
@@ -190,4 +145,3 @@ INFERENCE_TYPES = [TEMPLATES_INFERENCE, REASONING_TEMPLATES_INFERENCE]
 WARMUP_TYPES = [TEMPLATES_WARMUP, REASONING_TEMPLATES_WARMUP]
 
 EOS_TOKENS = {name: f["eos"] for name, f in FAMILIES.items()}
-BOS_FAMILIES = {name for name, f in FAMILIES.items() if f["bos"]}

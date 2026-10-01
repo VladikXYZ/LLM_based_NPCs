@@ -26,7 +26,7 @@
  {
   "name": "GLM 4.6V Flash",
   "path": "models/GLM-4.6V-Flash-Q4_K_M.gguf",
-  "family": "glm_v",
+  "family": "glm",
   "params": 122
  },
  {
@@ -56,7 +56,7 @@
  {
   "name": "LFM2.5 2.6B",
   "path": "models/LFM2.5-2.6B-Q4_K_M.gguf",
-  "family": "chatml_bos",
+  "family": "chatml",
   "params": 122
  },
  {
@@ -104,13 +104,13 @@
  {
   "name": "MiniCPM5 1B",
   "path": "models/MiniCPM5-1B-Q4_K_M.gguf",
-  "family": "chatml_bos",
+  "family": "chatml",
   "params": 122
  },
  {
   "name": "MiniCPM5 2B",
   "path": "models/MiniCPM5-2B-Q4_K_M.gguf",
-  "family": "chatml_bos",
+  "family": "chatml",
   "params": 122
  },
  {
@@ -134,13 +134,13 @@
  {
   "name": "Nemotron 30B small",
   "path": "models/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-Q4_0.gguf",
-  "family": "chatml_inline",
+  "family": "chatml",
   "params": 122
  },
  {
   "name": "Nemotron 4B",
   "path": "models/NVIDIA-Nemotron3-Nano-4B-Q4_K_M.gguf",
-  "family": "chatml_inline",
+  "family": "chatml",
   "params": 122
  },
  {
@@ -224,13 +224,13 @@
  {
   "name": "granite 4.2 3b",
   "path": "models/granite-4.2-3b-Q4_K_M.gguf",
-  "family": "chatml_inline",
+  "family": "chatml",
   "params": 122
  },
  {
   "name": "granite 4.2 8b",
   "path": "models/granite-4.2-8b-Q4_K_M.gguf",
-  "family": "chatml_inline",
+  "family": "chatml",
   "params": 122
  },
  {

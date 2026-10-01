@@ -3,7 +3,7 @@
     python check_models.py [device]
 
 Columns of the final table:
-    BOS     - the prompt starts with the BOS token (only for the families that need it)
+    BOS     - the prompt starts with the BOS token (only for the models that want one)
     REPLY   - normal mode: replies that are plain dialogue (not empty, no <think> or <speech> in them)
     STOP    - normal mode: replies that ended by themselves, before MAX_TOKENS
     CACHE   - normal mode: turns whose prompt reused everything that was in the KV cache
@@ -17,7 +17,7 @@ import questionary
 
 import utils
 import npc_runtime
-from chat_templates import BOS_FAMILIES, MINI_REASONING_RULE
+from chat_templates import MINI_REASONING_RULE
 from utils import get_devices, get_models
 
 RED = "\033[91m"
@@ -80,7 +80,7 @@ def check(model, gpu_layers):
         row["RESULT"] = "crashed"
 
         normal = converse(llm, model, False, cache)
-        if CUSTOM_JINJA and model["family"] in BOS_FAMILIES:
+        if CUSTOM_JINJA and model["family"] and utils.get_bos_token(llm):
             row["BOS"] = "ok" if llm._input_ids[0] == llm.token_bos() else "MISSING"
         row["REPLY"] = count([result.format_ok for result, _ in normal])
         row["STOP"] = count([result.chunks < MAX_TOKENS for result, _ in normal])

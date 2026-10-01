@@ -11,7 +11,7 @@ TURNS = [("Hello", "Greetings."), ("What do you sell?", "Swords."), ("How much?"
 
 
 def render(template, messages, family):
-    return ENV.from_string(template).render(messages=messages, bos_token="<BOS>" if family in ct.BOS_FAMILIES else "")
+    return ENV.from_string(template).render(messages=messages, bos_token="<BOS>")
 
 
 def test_every_model_has_a_template():
@@ -45,7 +45,7 @@ def test_rule_is_in_the_system_block():
         for family in ct.FAMILIES:
             prompt = render(ct.INFERENCE_TYPES[reason][family], [SYSTEM, {"role": "user", "content": "Hello"}], family)
             assert prompt.count(rule) == 1 and "You are Garrick.\n\n" + rule in prompt, family
-            assert prompt.startswith("<BOS>") == (family in ct.BOS_FAMILIES), family
+            assert prompt.startswith("<BOS>"), family
             # without a system message the rule is still there
             assert rule in render(ct.INFERENCE_TYPES[reason][family], [{"role": "user", "content": "Hello"}], family)
 

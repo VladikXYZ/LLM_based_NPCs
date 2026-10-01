@@ -10,7 +10,7 @@ from math import inf
 
 from llama_cpp import Llama
 from llama_cpp.llama_chat_format import Jinja2ChatFormatter
-from chat_templates import EOS_TOKENS, BOS_FAMILIES, INFERENCE_TYPES, WARMUP_TYPES
+from chat_templates import EOS_TOKENS, FAMILIES, INFERENCE_TYPES, WARMUP_TYPES
 
 DEVICES_FILE = "data/devices.json"
 MODELS_FILE = "data/models.json"
@@ -113,7 +113,8 @@ def get_models():
 
 def get_handlers(family: str, custom: bool, reason: bool, bos_token: str = ""):
     if not family or not custom: return None, None
-    bos = bos_token if family in BOS_FAMILIES else ""
+    # some formats already start with the BOS token
+    bos = "" if bos_token and FAMILIES[family]["system"][0].startswith(bos_token) else bos_token
 
     def handler(template):
         return Jinja2ChatFormatter(
@@ -126,8 +127,10 @@ def get_handlers(family: str, custom: bool, reason: bool, bos_token: str = ""):
 
 
 def get_bos_token(llm):
+    """The BOS token of a model that wants one in front of the prompt, else an empty string."""
     bos_id = llm.token_bos()
-    return llm._model.token_get_text(bos_id) if bos_id != -1 else ""
+    if bos_id == -1 or not llm._model.add_bos_token(): return ""
+    return llm._model.token_get_text(bos_id)
 
 
 def set_reasoning(llm, model, custom_jinja, reason):
