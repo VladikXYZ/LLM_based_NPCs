@@ -2,7 +2,7 @@ import os
 from llama_cpp import Llama
 
 MODEL_DIR = "models/"
-OUTPUT_FILE = "extracted_templates.txt"
+OUTPUT_FILE = "outcomes/extracted_templates.txt"
 
 # Find all .gguf files in your models directory
 gguf_files = sorted([f for f in os.listdir(MODEL_DIR) if f.endswith(".gguf")])

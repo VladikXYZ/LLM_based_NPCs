@@ -12,8 +12,8 @@ from llama_cpp import Llama
 from llama_cpp.llama_chat_format import Jinja2ChatFormatter
 from chat_templates import EOS_TOKENS, INFERENCE_TYPES, WARMUP_TYPES
 
-DEVICES_FILE = "devices.json"
-MODELS_FILE = "models/models.json"
+DEVICES_FILE = "data/devices.json"
+MODELS_FILE = "data/models.json"
 MODELS_DIRECTORY = "models"
 
 class MyException(Exception):

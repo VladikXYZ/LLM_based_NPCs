@@ -17,8 +17,8 @@ PC_NAME = platform.node()
 LOG_DIR = f'benchmarks/{PC_NAME}/'
 LOG_DIR = ""
 # os.makedirs(LOG_DIR, exist_ok=True)
-with open("test.json", "r") as f: MESSAGES = json.load(f)
-with open("data_3npcs.json") as file: NPC = json.load(file)[2]
+with open("data/test.json", "r") as f: MESSAGES = json.load(f)
+with open("data/data_3npcs.json") as file: NPC = json.load(file)[2]
 CUSTOM_JINJA = False
 REASON = False
 if CUSTOM_JINJA:

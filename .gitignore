@@ -1,6 +1,6 @@
 .idea
-devices.json
+data/devices.json
 __pycache__
 /models/*
 !models/Supra-Router-51M-Q1_0.gguf
-!models/models.json
+!data/models.json
