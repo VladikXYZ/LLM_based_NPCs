@@ -20,7 +20,7 @@ LOG_DIR = ""
 with open("data/test.json", "r") as f: MESSAGES = json.load(f)
 with open("data/data_3npcs.json") as file: NPC = json.load(file)[2]
 CUSTOM_JINJA = True
-REASON = True
+REASON = False
 if CUSTOM_JINJA:
     CHAT_HISTORY = [{"role": "system", "content": NPC["role"]}]
     WARMUP = CHAT_HISTORY[:]
@@ -30,7 +30,7 @@ else:
 
 NUM_MESS = len(MESSAGES)
 CONTEXT_SIZE = 4096
-MAX_TOKENS = 256
+MAX_TOKENS = 64
 TIMEOUT = (NUM_MESS * (0.9 + (MAX_TOKENS / 5.5))).__ceil__()
 # TIMEOUT = 4
 HEADER = ["MODEL", "TTFT", "T/s", "USER TOKENS", "NPC TOKENS", "TOTAL TIME", "ALL TOKENS", "PROMPT", "RESPONSE"]

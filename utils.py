@@ -111,7 +111,7 @@ def get_models():
     return usable
 
 
-with open("data/chat_templates.json") as f:
+with open("data/temps.json") as f:
     TEMPLATES = json.load(f)
 
 def get_handlers(family: str, custom: bool, reason: bool):
