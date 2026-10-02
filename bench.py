@@ -17,7 +17,7 @@ PC_NAME = platform.node()
 LOG_DIR = f'benchmarks/{PC_NAME}/'
 LOG_DIR = ""
 # os.makedirs(LOG_DIR, exist_ok=True)
-with open("data/test.json", "r") as f: MESSAGES = json.load(f)
+with open("data/test.json", "r") as f: MESSAGES = json.load(f)[:2]
 with open("data/data_3npcs.json") as file: NPC = json.load(file)[2]
 CUSTOM_JINJA = True
 REASON = False
@@ -29,8 +29,8 @@ else:
     WARMUP = CHAT_HISTORY[:] + [{"role": "user", "content": "warmup"}]
 
 NUM_MESS = len(MESSAGES)
-CONTEXT_SIZE = 4096
-MAX_TOKENS = 64
+CONTEXT_SIZE = 2048
+MAX_TOKENS = 32
 TIMEOUT = (NUM_MESS * (0.9 + (MAX_TOKENS / 5.5))).__ceil__()
 # TIMEOUT = 4
 HEADER = ["MODEL", "TTFT", "T/s", "USER TOKENS", "NPC TOKENS", "TOTAL TIME", "ALL TOKENS", "PROMPT", "RESPONSE"]
@@ -80,7 +80,7 @@ class Benchmarker:
             model_log = []
             llm = None
             llm_kwargs = {"model_path": model["path"], "n_gpu_layers": self.gpu_layers,
-                          "n_ctx": CONTEXT_SIZE, "verbose": False, "temperature": 0}
+                          "n_ctx": CONTEXT_SIZE, "verbose": False}
             try:
                 # llm = self.load_llm(model)
                 llm = utils.load_llm(model, llm_kwargs, WARMUP, CUSTOM_JINJA, reason=REASON, log=True)
@@ -103,7 +103,7 @@ class Benchmarker:
                                 assistant_response[t_out] = delta['content']
                                 t_out += 1
                         else: raise MyException("Timeout!", f"Ran out of time ({TIMEOUT} s)")
-                    assistant_response = "".join(assistant_response)
+                    string_response = "".join(assistant_response)
                     # raise  Exception("hups")
                     total_time = time.perf_counter() - start_time
                     gen_time = total_time - ttft
@@ -111,10 +111,10 @@ class Benchmarker:
                     all_tokens = llm.n_tokens
                     t_in = all_tokens - prev_n - t_out
 
-                    chat_history.append({"role": "assistant", "content": assistant_response})
+                    chat_history.append({"role": "assistant", "content": string_response})
                     query = user_input[:].replace('\n', '|')
-                    response = assistant_response[:].replace('\n', '|')
-                    model_log.append([model["name"], ttft, tps, t_in, t_out, total_time, all_tokens, query, response])
+                    # response = assistant_response[:].replace('\n', '|')
+                    model_log.append([model["name"], ttft, tps, t_in, t_out, total_time, all_tokens, query, string_response])
                     prev_n = all_tokens
                     # row = utils.run_llm(llm, model, user_input, chat_history, MAX_TOKENS, timeout=timeout)
                     # timeout -= row[5]
@@ -128,7 +128,6 @@ class Benchmarker:
                 model_log.append([model["name"]] + ERROR_ROW +[str(e)])
                 done = len(model_log)
                 for _ in range(NUM_MESS - done): model_log.append([model["name"]] + ERROR_ROW + [-1])
-
             finally:
                 if 'stream' in locals(): del stream
                 if hasattr(llm, 'close'): llm.close()

@@ -144,7 +144,7 @@ def load_llm(model, llm_kwargs, warmup_inputs=[{"role":"user", "content":"warmup
     with Silencer():
         try:
 
-            llm = Llama(**llm_kwargs)
+            llm = Llama(**llm_kwargs, seed=42)
             print(f"Loaded! | ", end="", flush=True)
 
             try:
@@ -187,8 +187,7 @@ if __name__ == '__main__':
         print(name)
         if "gemma" in name: family = "gemma"
         elif "gpt" in name: family = "gptoss"
-        elif "spark" in name:
-            family = "spark"
+        elif "spark" in name: family = "spark"
         elif "llama" in name: family = "llama"
         elif "ministral" in name: family = "mistral"
         elif "glm" in name: family = "glm"
@@ -197,8 +196,10 @@ if __name__ == '__main__':
         elif any(k in name for k in ["lfm"]):
             family = "chatml_nr"
         else: family = None
-        m_dict = {"name": name.replace("-", " "), "path": f"models/{model}", "family": family, "params": 122}
+        m_dict = {"name": name.replace("-", " "), "path": f"models/{model}", "family": family, "params": os.path.getsize(f"models/{model}")}
         models_dicts.append(m_dict)
+
+    models_dicts = sorted(models_dicts, key=lambda x: x["params"], reverse=True)
 
     with open(MODELS_FILE, "w") as f:
         json.dump(models_dicts, f, indent=1)
