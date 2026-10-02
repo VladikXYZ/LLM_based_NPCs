@@ -4297,5 +4297,3 @@ Template:
 
 Models with NO chat template found:
   - Supra-Router-51M-Q1_0.gguf
-Failed:
-  - diffusiongemma-26B-A4B-it-Q4_K_M.gguf
