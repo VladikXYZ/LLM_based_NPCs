@@ -176,7 +176,7 @@
  {
   "name": "minicpm5 2b q4_k_m",
   "path": "models/MiniCPM5-2B-Q4_K_M.gguf",
-  "family": "chatml",
+  "family": "chatml_nr",
   "params": 1561318368
  },
  {
@@ -206,7 +206,7 @@
  {
   "name": "minicpm5 1b q4_k_m",
   "path": "models/MiniCPM5-1B-Q4_K_M.gguf",
-  "family": "chatml",
+  "family": "chatml_nr",
   "params": 688065920
  },
  {
@@ -238,11 +238,5 @@
   "path": "models/LFM2.5-230M-Q4_K_M.gguf",
   "family": "chatml_nr",
   "params": 153406304
- },
- {
-  "name": "supra router 51m q1_0",
-  "path": "models/Supra-Router-51M-Q1_0.gguf",
-  "family": null,
-  "params": 19610176
  }
 ]

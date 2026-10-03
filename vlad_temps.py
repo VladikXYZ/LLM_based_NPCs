@@ -11,7 +11,9 @@ TEMPLATES_INFERENCE = {
         {{- '<|im_start|>' + message.role + '\n' + message.content + '<|im_end|>\n' -}}
     {%- endif -%}
 {%- endfor -%}
+{%- if not not_generate -%}
 {{- '<|im_start|>assistant\n<think>\n\n</think>\n\n' -}}
+{%- endif -%}
 """
     },
 
@@ -23,7 +25,9 @@ TEMPLATES_INFERENCE = {
 {%- for message in messages -%}
     {{- '<|im_start|>' + message.role + '\n' + message.content + '<|im_end|>\n' -}}
 {%- endfor -%}
+{%- if not not_generate -%}
 {{- '<|im_start|>assistant\n' -}}
+{%- endif -%}
 """
     },
 
@@ -35,7 +39,9 @@ TEMPLATES_INFERENCE = {
 {%- for message in messages -%}
     {{- '<|start_header_id|>' + message.role + '<|end_header_id|>\n\n' + message.content + '<|eot_id|>' -}}
 {%- endfor -%}
+{%- if not not_generate -%}
 {{- '<|start_header_id|>assistant<|end_header_id|>\n\n' -}}
+{%- endif -%}
 """
     },
 
@@ -48,7 +54,9 @@ TEMPLATES_INFERENCE = {
     {%- set role = 'model' if message.role == 'assistant' else message.role -%}
     {{- '<|turn>' + role + '\n' + message.content + '<turn|>\n' -}}
 {%- endfor -%}
+{%- if not not_generate -%}
 {{- '<|turn>model\n<|channel>thought\n<channel|>' -}}
+{%- endif -%}
 """
     },
 
@@ -80,7 +88,9 @@ TEMPLATES_INFERENCE = {
         {{- '\n<|assistant|>\n<think></think>' + message.content -}}
     {%- endif -%}
 {%- endfor -%}
+{%- if not not_generate -%}
 {{- '\n<|assistant|>\n<think></think>' -}}
+{%- endif -%}
 """
     },
 
@@ -96,7 +106,9 @@ TEMPLATES_INFERENCE = {
         {{- '<role>ASSISTANT</role>\n<think></think>' + message.content + '<|role_end|>' -}}
     {%- endif -%}
 {%- endfor -%}
+{%- if not not_generate -%}
 {{- '<role>ASSISTANT</role>\n<think></think>' -}}
+{%- endif -%}
 """
     },
 
@@ -112,7 +124,9 @@ TEMPLATES_INFERENCE = {
         {{- '<｜start▁of▁sentence｜><|Bot|><think></think>' + message.content + '<｜end▁of▁sentence｜>' -}}
     {%- endif -%}
 {%- endfor -%}
+{%- if not not_generate -%}
 {{- '<｜start▁of▁sentence｜><|Bot|><think></think>' -}}
+{%- endif -%}
 """
     },
 
@@ -124,7 +138,9 @@ TEMPLATES_INFERENCE = {
 {%- for message in messages -%}
     {{- '<|start|>' + message.role + '<|message|>' + message.content + '<|end|>' -}}
 {%- endfor -%}
+{%- if not not_generate -%}
 {{- '<|start|>assistant<|channel|>final<|message|>' -}}
+{%- endif -%}
 """
     },
 
@@ -140,7 +156,9 @@ TEMPLATES_INFERENCE = {
         {{- '\n<SPECIAL_11>Assistant\n<think></think>' + message.content + '\n<SPECIAL_12>' -}}
     {%- endif -%}
 {%- endfor -%}
+{%- if not not_generate -%}
 {{- '\n<SPECIAL_11>Assistant\n<think></think>' -}}
+{%- endif -%}
 """
     }
 }

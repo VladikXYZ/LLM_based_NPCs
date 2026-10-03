@@ -3,6 +3,8 @@ import os
 import json
 import sys
 import time
+from tabnanny import verbose
+
 import pandas
 import platform
 import questionary
@@ -22,13 +24,13 @@ PC_NAME = platform.node()
 LOG_DIR = f'benchmarks/{PC_NAME}/'
 LOG_DIR = ""
 # os.makedirs(LOG_DIR, exist_ok=True)
-with open("data/shorts.json", "r") as f: SHORTS = json.load(f)[:8]
-with open("data/longs.json", "r") as f: LONGS = json.load(f)[:8]
+with open("data/shorts.json", "r") as f: SHORTS = json.load(f)[:4]
+with open("data/longs.json", "r") as f: LONGS = json.load(f)[:4]
 with open("data/data_3npcs.json") as file: NPC = json.load(file)[2]
 CUSTOM_JINJA = True
 REASON = False
 if CUSTOM_JINJA:
-    CHAT_HISTORY = [{"role": "system", "content": NPC["role"]}]
+    CHAT_HISTORY = []#[{"role": "system", "content": NPC["role"]}]
     WARMUP = []#CHAT_HISTORY[:]
 else:
     CHAT_HISTORY = [{"role": "system", "content": NPC["role"] + NPC["shared_system_prompt"]}]
@@ -36,8 +38,8 @@ else:
 
 MESSAGES = [("long", LONGS), ("short", SHORTS)]
 NUM_MESS = len(SHORTS+LONGS)
-CONTEXT_SIZE = 2048
-MAX_TOKENS = 16
+CONTEXT_SIZE = 4096
+MAX_TOKENS = 64
 TIMEOUT = (NUM_MESS * (0.9 + (MAX_TOKENS / 5.5))).__ceil__()
 HEADER = ["MODEL", "TTFT", "T/s", "USER TOKENS", "NPC TOKENS", "TOTAL TIME", "ALL TOKENS", "PROMPT", "RESPONSE"]
 ERROR_ROW = [-1 for _ in range(len(HEADER)-2)]
@@ -52,6 +54,7 @@ class Benchmarker:
     def __init__(self, dev=None):
         self.models = get_models()
         self.devices = get_devices()
+        self.formatter = None
 
         if dev is None:
             device_choices = [f"{i} | {d['type']:<8} | {d['name']}" for i, d in enumerate(self.devices)]
@@ -67,6 +70,13 @@ class Benchmarker:
         self.gpu_layers = -1 if self.device["type"] == "Vulkan" else 0
         os.environ["GGML_VK_VISIBLE_DEVICES"] = str(self.device["id"] * (self.device["type"] == "Vulkan"))
         self._run_benchmark()
+
+    def _cache(self, llm):
+        warmup_prompt = self.formatter(messages=WARMUP, not_generate=True).prompt
+        warmup_tokens = llm.tokenize(warmup_prompt.encode("utf-8"), add_bos=False, special=True)
+        llm.eval(warmup_tokens)
+        # print(warmup_prompt)
+        return len(warmup_tokens)
 
     def _run_benchmark(self):
         dev_name = self.device["type"] + "_" + "_".join(self.device["name"].split())
@@ -89,32 +99,42 @@ class Benchmarker:
                 with utils.Silencer():
                     try:
                         llm = Llama(**llm_kwargs)
-                        print(f"Loaded! | ", end="", flush=True)
+                        print(f"Loaded!", end="", flush=True)
                         try:
+                            templating = vlad_temps.TEMPLATES_INFERENCE[family]
                             if CUSTOM_JINJA:
-                                templating = vlad_temps.TEMPLATES_INFERENCE[family]
-                                template = templating["template"].replace("__RULE__", f"'SHARED_RPG_RULE'")
-                                handler_inference = Jinja2ChatFormatter(template=template,
+                                template = templating["template"].replace("__RULE__", f"\"{SHARED_RPG_RULE}\"")
+                                formatter = Jinja2ChatFormatter(template=template,
                                                                         eos_token=templating["eos"],
-                                                                        bos_token=templating["bos"]).to_chat_handler()
-                                llm.chat_handler = handler_inference
-                                # llm_kwargs["chat_handler"] = handler_inference
-                            llm.create_chat_completion(WARMUP, max_tokens=1)
-                            print("Warmuped!!", flush=True)
+                                                                        bos_token=templating["bos"])
+                                llm.chat_handler = formatter.to_chat_handler()
+                                self.formatter = formatter
+                            else:
+                                formatter = Jinja2ChatFormatter(template=llm.metadata.get("tokenizer.chat_template"),
+                                                                eos_token=templating["eos"],
+                                                                bos_token=templating["bos"])
+                                self.formatter = formatter
+                            # llm.create_chat_completion(WARMUP, max_tokens=1)
+                            # self._cache(llm)
+                            # self.formatter.add_generation_prompt = False
+                            # print("KV Cache Primed!!", flush=True)
+                            # print("Warmuped!!", flush=True)
+                            # print
 
                         except Exception as e: raise MyException("Warmup error", str(e))
                     except Exception as e:
                         if type(e) != MyException: raise MyException("Loading error", str(e))
 
+                if not llm: raise MyException("Something went wron", "xdd")
                 model_start = time.perf_counter()
                 timeout = TIMEOUT
 
                 for name, mess in MESSAGES:
-                    llm.create_chat_completion(WARMUP, max_tokens=1)
-                    prev_n = llm.n_tokens - 1
+                    prev_n = self._cache(llm)
                     for user_input in tqdm(mess, desc=f"Testing {model["name"]} on {name} queries", unit="query"):
                         chat_history.append({"role": "user", "content": user_input})
-                        ttft= TIMEOUT*2
+                        # print(self.formatter(messages=chat_history).prompt)
+                        ttft = TIMEOUT*2
                         start_time = time.perf_counter()
                         assistant_response = []
 
@@ -131,16 +151,16 @@ class Benchmarker:
                         total_time = time.perf_counter() - start_time
                         gen_time = total_time - ttft
                         t_out = len(assistant_response)
-                        tps = t_out / gen_time if gen_time > 0 else -1
+                        tps = (t_out - 1) / gen_time if gen_time > 0 else -1
                         all_tokens = llm.n_tokens
-                        t_in = all_tokens - prev_n - t_out
+                        t_in = len(llm.tokenize(user_input.encode("utf-8")))
 
                         chat_history.append({"role": "assistant", "content": string_response})
-                        query = user_input[:].replace('\n', '|')
+                        # query = user_input[:].replace('\n', '|')
                         # response = assistant_response[:].replace('\n', '|')
-                        model_log.append([model["name"], ttft, tps, t_in, t_out, total_time, all_tokens, query, assistant_response])
+                        model_log.append([model["name"], ttft, tps, t_in, t_out, total_time, all_tokens, user_input, string_response])
                         prev_n = all_tokens
-                    chat_history = chat_history[:1]
+                    chat_history = CHAT_HISTORY[:]
                 print(f"{GREEN}FINISHED!!!{RESET}")
 
             except Exception as e:
