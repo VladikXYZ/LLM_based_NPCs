@@ -7,10 +7,14 @@ import pandas
 import platform
 import questionary
 from llama_cpp import Llama
+from llama_cpp.llama_chat_format import Jinja2ChatFormatter
 from tqdm import tqdm
 
 import utils
+import vlad_temps
 from utils import get_devices, get_models, MyException
+
+SHARED_RPG_RULE = "You are a fantasy RPG NPC. Speak ONLY pure dialogue with NO stage directions, actions, or asterisks. Be direct and terse. Answer the player's exact question and immediately stop talking. Do NOT volunteer background facts unless directly asked, and do NOT over-explain. Treat your reality as a normal fantasy world. Maximum length: 2 short sentences."
 
 # MODEL_DIR = 'models/'
 # DEVICES_FILE = "devices.json"
@@ -18,20 +22,22 @@ PC_NAME = platform.node()
 LOG_DIR = f'benchmarks/{PC_NAME}/'
 LOG_DIR = ""
 # os.makedirs(LOG_DIR, exist_ok=True)
-with open("data/test.json", "r") as f: MESSAGES = json.load(f)
+with open("data/shorts.json", "r") as f: SHORTS = json.load(f)[:8]
+with open("data/longs.json", "r") as f: LONGS = json.load(f)[:8]
 with open("data/data_3npcs.json") as file: NPC = json.load(file)[2]
-CUSTOM_JINJA = False
+CUSTOM_JINJA = True
 REASON = False
 if CUSTOM_JINJA:
     CHAT_HISTORY = [{"role": "system", "content": NPC["role"]}]
-    WARMUP = CHAT_HISTORY[:]
+    WARMUP = []#CHAT_HISTORY[:]
 else:
     CHAT_HISTORY = [{"role": "system", "content": NPC["role"] + NPC["shared_system_prompt"]}]
     WARMUP = CHAT_HISTORY[:] + [{"role": "user", "content": "warmup"}]
 
-NUM_MESS = len(MESSAGES)
+MESSAGES = [("long", LONGS), ("short", SHORTS)]
+NUM_MESS = len(SHORTS+LONGS)
 CONTEXT_SIZE = 2048
-MAX_TOKENS = 32
+MAX_TOKENS = 16
 TIMEOUT = (NUM_MESS * (0.9 + (MAX_TOKENS / 5.5))).__ceil__()
 HEADER = ["MODEL", "TTFT", "T/s", "USER TOKENS", "NPC TOKENS", "TOTAL TIME", "ALL TOKENS", "PROMPT", "RESPONSE"]
 ERROR_ROW = [-1 for _ in range(len(HEADER)-2)]
@@ -70,7 +76,7 @@ class Benchmarker:
         test_start = time.perf_counter()
         chat_history = CHAT_HISTORY[:]
         print(f"{"CUSTOM JINJA" if CUSTOM_JINJA else "DEFAULT JINJA"} | {"MINI-REASONING" if REASON else "ONESHOT"} | DEVICE:{dev_name} | TIMEOUT:{TIMEOUT} | {num_models} MODELS")
-        messages = [("long", MESSAGES[:5]), ("short", MESSAGES[5:])]
+
 
         for i, model in enumerate(self.models):
             family = model["family"]
@@ -79,12 +85,20 @@ class Benchmarker:
             llm_kwargs = {"model_path": model["path"], "n_gpu_layers": self.gpu_layers,
                           "n_ctx": CONTEXT_SIZE, "verbose": False, "seed": 42}
             try:
-                print(f"Loading {i+1}. {model["name"]}/{num_models} | ", end="", flush=True)
+                print(f"Loading {i+1}/{num_models}. {model["name"]} | ", end="", flush=True)
                 with utils.Silencer():
                     try:
                         llm = Llama(**llm_kwargs)
                         print(f"Loaded! | ", end="", flush=True)
                         try:
+                            if CUSTOM_JINJA:
+                                templating = vlad_temps.TEMPLATES_INFERENCE[family]
+                                template = templating["template"].replace("__RULE__", f"'SHARED_RPG_RULE'")
+                                handler_inference = Jinja2ChatFormatter(template=template,
+                                                                        eos_token=templating["eos"],
+                                                                        bos_token=templating["bos"]).to_chat_handler()
+                                llm.chat_handler = handler_inference
+                                # llm_kwargs["chat_handler"] = handler_inference
                             llm.create_chat_completion(WARMUP, max_tokens=1)
                             print("Warmuped!!", flush=True)
 
@@ -95,8 +109,7 @@ class Benchmarker:
                 model_start = time.perf_counter()
                 timeout = TIMEOUT
 
-
-                for name, mess in messages:
+                for name, mess in MESSAGES:
                     llm.create_chat_completion(WARMUP, max_tokens=1)
                     prev_n = llm.n_tokens - 1
                     for user_input in tqdm(mess, desc=f"Testing {model["name"]} on {name} queries", unit="query"):
