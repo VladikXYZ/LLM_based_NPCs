@@ -176,33 +176,33 @@ def load_llm(model, llm_kwargs, warmup_inputs=[{"role":"user", "content":"warmup
 
 if __name__ == '__main__':
     pass
-    models = sorted([os.path.basename(x) for x in os.listdir(MODELS_DIRECTORY) if x.endswith(".gguf")],key=os.path.basename)
-    print(models)
-    reals = set([f"models/{x}" for x in models])
-    print(reals)
-    models_dicts = []
-    for model in models:
-        name = model.lower().split(".")[:-1]
-        name = "".join(name)
-        print(name)
-        if "gemma" in name: family = "gemma"
-        elif "gpt" in name: family = "gptoss"
-        elif "spark" in name: family = "spark"
-        elif "llama" in name: family = "llama"
-        elif "ministral" in name: family = "mistral"
-        elif "glm" in name: family = "glm"
-        elif any(k in name for k in ["qwen", "bonsai", "gpt", "nemotron", "ling", "spark", "granite", "minicpm", "maple"]):
-            family = "chatml"
-        elif any(k in name for k in ["lfm"]):
-            family = "chatml_nr"
-        else: family = None
-        m_dict = {"name": name.replace("-", " "), "path": f"models/{model}", "family": family, "params": os.path.getsize(f"models/{model}")}
-        models_dicts.append(m_dict)
-
-    models_dicts = sorted(models_dicts, key=lambda x: x["params"], reverse=True)
-
-    with open(MODELS_FILE, "w") as f:
-        json.dump(models_dicts, f, indent=1)
+    # models = sorted([os.path.basename(x) for x in os.listdir(MODELS_DIRECTORY) if x.endswith(".gguf")],key=os.path.basename)
+    # print(models)
+    # reals = set([f"models/{x}" for x in models])
+    # print(reals)
+    # models_dicts = []
+    # for model in models:
+    #     name = model.lower().split(".")[:-1]
+    #     name = "".join(name)
+    #     print(name)
+    #     if "gemma" in name: family = "gemma"
+    #     elif "gpt" in name: family = "gptoss"
+    #     elif "spark" in name: family = "spark"
+    #     elif "llama" in name: family = "llama"
+    #     elif "ministral" in name: family = "mistral"
+    #     elif "glm" in name: family = "glm"
+    #     elif any(k in name for k in ["qwen", "bonsai", "gpt", "nemotron", "ling", "spark", "granite", "minicpm", "maple"]):
+    #         family = "chatml"
+    #     elif any(k in name for k in ["lfm"]):
+    #         family = "chatml_nr"
+    #     else: family = None
+    #     m_dict = {"name": name.replace("-", " "), "path": f"models/{model}", "family": family, "params": os.path.getsize(f"models/{model}")}
+    #     models_dicts.append(m_dict)
+    #
+    # models_dicts = sorted(models_dicts, key=lambda x: x["params"], reverse=True)
+    #
+    # with open(MODELS_FILE, "w") as f:
+    #     json.dump(models_dicts, f, indent=1)
 
     # with open("models/backup.json", "r") as f:
     #     models_dicts = json.load(f)
@@ -214,3 +214,9 @@ if __name__ == '__main__':
     # with open(MODELS_FILE, "w") as f:
     #     json.dump(models_dicts, f, indent=1)
     #     # print("skibidi")
+
+    with open("data/models.json", "r") as f:
+        models = json.load(f)
+    for model in models:
+        print(model["name"])
+
