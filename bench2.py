@@ -105,7 +105,7 @@ class Benchmarker:
                         try:
                             templating = vlad_temps.TEMPLATES[family]
                             if CUSTOM_JINJA:
-                                template = templating["template"].replace("__RULE__", f"\"{SHARED_RPG_RULE}\"")
+                                template = templating["template"].replace("__RULE__", f"\"{SHARED_RPG_RULE}{NPC["role"]}\"")
                                 formatter = Jinja2ChatFormatter(template=template,
                                                                         eos_token=templating["eos"],
                                                                         bos_token=templating["bos"])
