@@ -83,13 +83,10 @@ class Benchmarker:
         self.formatter.add_generation_prompt = False
         warmup_prompt = self.formatter(messages=WARMUP).prompt
         warmup_tokens = llm.tokenize(warmup_prompt.encode("utf-8"), add_bos=False, special=True)
-        # start from an empty context: models that cannot cut their KV cache back would re-evaluate everything
         llm.reset()
         llm.eval(warmup_tokens)
-        # wait until the GPU is done, otherwise the first query pays for the warmup in its TTFT
         llama_cpp.llama_synchronize(llm._ctx.ctx)
         self.formatter.add_generation_prompt = True
-        # print(warmup_prompt)
         return len(warmup_tokens)
 
     def _run_benchmark(self):
@@ -113,12 +110,13 @@ class Benchmarker:
                 with utils.Silencer():
                     try:
                         llm = Llama(**llm_kwargs)
-                        print(f"Loaded!", end="", flush=True)
+                        print(f"Loaded! | ", end="", flush=True)
                         try:
                             templating = vlad_temps.TEMPLATES[family]
                             if CUSTOM_JINJA:
-                                rule = SHARED_RPG_RULE + " " + REASONING_RULE[REASON]
+                                rule = f"{SHARED_RPG_RULE} {NPC["role"]} {REASONING_RULE[REASON]}"
                                 template = templating["template"].replace("__RULE__", f"\"{rule}\"")
+                                # print(template)
                                 formatter = Jinja2ChatFormatter(template=template,
                                                                         eos_token=templating["eos"],
                                                                         bos_token=templating["bos"])
@@ -129,11 +127,11 @@ class Benchmarker:
                                                                 eos_token=templating["eos"],
                                                                 bos_token=templating["bos"])
                                 self.formatter = formatter
-                            # llm.create_chat_completion(WARMUP, max_tokens=1)
+                            llm.create_chat_completion(WARMUP, max_tokens=4)
                             # self._cache(llm)
                             # self.formatter.add_generation_prompt = False
                             # print("KV Cache Primed!!", flush=True)
-                            # print("Warmuped!!", flush=True)
+                            print("Warmuped!!", flush=True)
                             # print
 
                         except Exception as e: raise MyException("Warmup error", str(e))
