@@ -8,6 +8,7 @@ from tabnanny import verbose
 import pandas
 import platform
 import questionary
+import llama_cpp
 from llama_cpp import Llama
 from llama_cpp.llama_chat_format import Jinja2ChatFormatter
 from tqdm import tqdm
@@ -16,7 +17,14 @@ import utils
 import vlad_temps
 from utils import get_devices, get_models, MyException
 
-SHARED_RPG_RULE = "You are a fantasy RPG NPC. Speak ONLY pure dialogue with NO stage directions, actions, or asterisks. Be direct and terse. Answer the player's exact question and immediately stop talking. Do NOT volunteer background facts unless directly asked, and do NOT over-explain. Treat your reality as a normal fantasy world. Maximum length: 2 short sentences."
+# The rules go into the templates inside double quotes, so they must not contain any.
+SHARED_RPG_RULE = "You are an NPC in a fantasy RPG. Reply with spoken dialogue only: no stage directions, actions, asterisks or quotation marks. Answer the player's exact question in at most 2 short sentences and volunteer nothing else. Use only facts from your knowledge base. Never invent names, places, people, items or events; if your knowledge base does not cover something, say in character that you do not know."
+
+# Added after the shared rule: [no reasoning, mini reasoning], picked by REASON.
+REASONING_RULE = [
+    "DO NOT THINK. Reply with the dialogue immediately.",
+    "OUTPUT FORMAT, mandatory in every reply: first a brief response plan (at most 2 sentences), then exactly one | separator, then the spoken dialogue. Example: The player wants directions, I will point the way. | The inn is past the well. The plan is not spoken: the dialogue rules apply only to the text after |.",
+]
 
 # MODEL_DIR = 'models/'
 # DEVICES_FILE = "devices.json"
@@ -75,7 +83,11 @@ class Benchmarker:
         self.formatter.add_generation_prompt = False
         warmup_prompt = self.formatter(messages=WARMUP).prompt
         warmup_tokens = llm.tokenize(warmup_prompt.encode("utf-8"), add_bos=False, special=True)
+        # start from an empty context: models that cannot cut their KV cache back would re-evaluate everything
+        llm.reset()
         llm.eval(warmup_tokens)
+        # wait until the GPU is done, otherwise the first query pays for the warmup in its TTFT
+        llama_cpp.llama_synchronize(llm._ctx.ctx)
         self.formatter.add_generation_prompt = True
         # print(warmup_prompt)
         return len(warmup_tokens)
@@ -105,7 +117,8 @@ class Benchmarker:
                         try:
                             templating = vlad_temps.TEMPLATES[family]
                             if CUSTOM_JINJA:
-                                template = templating["template"].replace("__RULE__", f"\"{SHARED_RPG_RULE}\"")
+                                rule = SHARED_RPG_RULE + " " + REASONING_RULE[REASON]
+                                template = templating["template"].replace("__RULE__", f"\"{rule}\"")
                                 formatter = Jinja2ChatFormatter(template=template,
                                                                         eos_token=templating["eos"],
                                                                         bos_token=templating["bos"])
