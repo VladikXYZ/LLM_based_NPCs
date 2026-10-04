@@ -8,7 +8,7 @@
  {
   "name": "nvidia Nemotron 3.5 30B A30B",
   "path": "models/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-Q4_0.gguf",
-  "family": "chatml",
+  "family": "chatml_inline",
   "params": 16947541728
  },
  {
@@ -20,13 +20,13 @@
  {
   "name": "Gemma 4 26B A4B",
   "path": "models/gemma-4-26B-A4B-it-UD-Q4_K_M.gguf",
-  "family": "gemma",
+  "family": "gemma_think",
   "params": 16947541728
  },
  {
   "name": "LFM2 24B A2B q4_k_m",
   "path": "models/LFM2-24B-A2B-Q4_K_M.gguf",
-  "family": "chatml_bos",
+  "family": "lfm",
   "params": 14415473952
  },
  {
@@ -56,7 +56,7 @@
  {
   "name": "Gemma 4 12B",
   "path": "models/gemma-4-12b-it-Q4_K_M.gguf",
-  "family": "gemma",
+  "family": "gemma_think",
   "params": 7121861440
  },
  {
@@ -68,7 +68,7 @@
  {
   "name": "GLM 4.6V Flash",
   "path": "models/GLM-4.6V-Flash-Q4_K_M.gguf",
-  "family": "glm",
+  "family": "glm_v",
   "params": 6166578784
  },
  {
@@ -86,7 +86,7 @@
  {
   "name": "granite 4.2 8B",
   "path": "models/granite-4.2-8b-Q4_K_M.gguf",
-  "family": "chatml",
+  "family": "chatml_inline",
   "params": 5347917952
  },
  {
@@ -98,7 +98,7 @@
  {
   "name": "LFM2.5 8B A1B",
   "path": "models/LFM2.5-8B-A1B-Q4_K_M.gguf",
-  "family": "chatml_bos",
+  "family": "lfm_think",
   "params": 5155564768
  },
  {
@@ -134,7 +134,7 @@
  {
   "name": "nvidia Nemotron3 Nano 4B",
   "path": "models/NVIDIA-Nemotron3-Nano-4B-Q4_K_M.gguf",
-  "family": "chatml",
+  "family": "chatml_inline",
   "params": 2837072864
  },
  {
@@ -152,7 +152,7 @@
  {
   "name": "granite 4.2 3B",
   "path": "models/granite-4.2-3b-Q4_K_M.gguf",
-  "family": "chatml",
+  "family": "chatml_inline",
   "params": 2244011552
  },
  {
@@ -200,7 +200,7 @@
  {
   "name": "LFM2.5 1.2B ",
   "path": "models/LFM2.5-1.2B-Instruct-Q4_K_M.gguf",
-  "family": "chatml_bos",
+  "family": "lfm",
   "params": 730895168
  },
  {
@@ -230,13 +230,13 @@
  {
   "name": "LFM2.5 350M",
   "path": "models/LFM2.5-350M-Q4_K_M.gguf",
-  "family": "chatml_bos",
+  "family": "lfm",
   "params": 229312224
  },
  {
   "name": "LFM2.5 230M",
   "path": "models/LFM2.5-230M-Q4_K_M.gguf",
-  "family": "chatml_bos",
+  "family": "lfm",
   "params": 153406304
  }
 ]

@@ -8,6 +8,7 @@ from tabnanny import verbose
 import pandas
 import platform
 import questionary
+import llama_cpp
 from llama_cpp import Llama
 from llama_cpp.llama_chat_format import Jinja2ChatFormatter
 from tqdm import tqdm
@@ -16,7 +17,32 @@ import utils
 import vlad_temps
 from utils import get_devices, get_models, MyException
 
-SHARED_RPG_RULE = "You are a fantasy RPG NPC. Speak ONLY pure dialogue with NO stage directions, actions, or asterisks. Be direct and terse. Answer the player's exact question and immediately stop talking. Do NOT volunteer background facts unless directly asked, and do NOT over-explain. Treat your reality as a normal fantasy world. Maximum length: 2 short sentences."
+# The rules go into the templates inside double quotes, so they must not contain any.
+SHARED_RPG_RULE = "You are an NPC in a fantasy RPG. Reply with spoken dialogue only: no stage directions, actions, asterisks or quotation marks. Answer the player's exact question in at most 2 short sentences and volunteer nothing else. Use only facts from your knowledge base. Never invent names, places, people, items or events."
+
+# Mini reasoning: the reply is "plan | dialogue". The separator is one token in the tokenizers of the models.
+SEPARATOR = "|"
+# Added after the shared rule: [no reasoning, mini reasoning], picked by REASON.
+REASONING_RULE = [
+    "DO NOT THINK. Reply with the dialogue immediately.",
+    f"OUTPUT FORMAT, mandatory in every reply: first a one-sentence plan of how you will answer (not the answer itself), then exactly one {SEPARATOR} separator, then the spoken dialogue, which must never be empty and is the only part the rules above apply to. Example: Asked about the weather, I will grumble about the rain. {SEPARATOR} It has rained for three days.",
+]
+# Leftovers of the model's own reasoning make a reply invalid.
+REASONING_TAGS = ("<think>", "</think>", "<|channel>", "<channel|>")
+
+
+def split_response(raw, mini):
+    """Return (plan, dialogue, format_ok). A malformed reply never yields dialogue."""
+    if any(tag in raw for tag in REASONING_TAGS):
+        return "", "", False
+    if not mini:
+        ok = bool(raw.strip()) and SEPARATOR not in raw
+        return "", raw.strip() if ok else "", ok
+    if raw.count(SEPARATOR) != 1:
+        return "", "", False
+    plan, dialogue = (part.strip() for part in raw.split(SEPARATOR))
+    ok = bool(plan and dialogue)
+    return plan, dialogue if ok else "", ok
 
 # MODEL_DIR = 'models/'
 # DEVICES_FILE = "devices.json"
@@ -24,11 +50,11 @@ PC_NAME = platform.node()
 LOG_DIR = f'benchmarks/{PC_NAME}/'
 LOG_DIR = ""
 # os.makedirs(LOG_DIR, exist_ok=True)
-with open("data/shorts.json", "r") as f: SHORTS = json.load(f)[:4]
-with open("data/longs.json", "r") as f: LONGS = json.load(f)[:4]
+with open("data/shorts.json", "r") as f: SHORTS = json.load(f)
+with open("data/longs.json", "r") as f: LONGS = json.load(f)
 with open("data/data_3npcs.json") as file: NPC = json.load(file)[2]
 CUSTOM_JINJA = True
-REASON = False
+REASON = True
 if CUSTOM_JINJA:
     CHAT_HISTORY = []#[{"role": "system", "content": NPC["role"]}]
     WARMUP = []#CHAT_HISTORY[:]
@@ -36,12 +62,13 @@ else:
     CHAT_HISTORY = [{"role": "system", "content": NPC["role"] + NPC["shared_system_prompt"]}]
     WARMUP = CHAT_HISTORY[:] + [{"role": "user", "content": "warmup"}]
 
-MESSAGES = [("long", LONGS), ("short", SHORTS)]
+MESSAGES = [("short", SHORTS), ("long", LONGS)]
 NUM_MESS = len(SHORTS+LONGS)
-CONTEXT_SIZE = 4096
-MAX_TOKENS = 64
+CONTEXT_SIZE = 4096+REASON*2048
+MAX_TOKENS = 64+REASON*32
 TIMEOUT = (NUM_MESS * (0.9 + (MAX_TOKENS / 5.5))).__ceil__()
-HEADER = ["MODEL", "TTFT", "T/s", "USER TOKENS", "NPC TOKENS", "TOTAL TIME", "ALL TOKENS", "PROMPT", "RESPONSE"]
+# DIALOGUE TTFT: seconds to the first dialogue (after the separator in mini reasoning), -1 if the format is wrong
+HEADER = ["MODEL", "TTFT", "T/s", "USER TOKENS", "NPC TOKENS", "TOTAL TIME", "ALL TOKENS", "DIALOGUE TTFT", "FORMAT OK", "PROMPT", "RESPONSE"]
 ERROR_ROW = [-1 for _ in range(len(HEADER)-2)]
 
 
@@ -75,9 +102,10 @@ class Benchmarker:
         self.formatter.add_generation_prompt = False
         warmup_prompt = self.formatter(messages=WARMUP).prompt
         warmup_tokens = llm.tokenize(warmup_prompt.encode("utf-8"), add_bos=False, special=True)
+        llm.reset()
         llm.eval(warmup_tokens)
+        llama_cpp.llama_synchronize(llm._ctx.ctx)
         self.formatter.add_generation_prompt = True
-        # print(warmup_prompt)
         return len(warmup_tokens)
 
     def _run_benchmark(self):
@@ -95,17 +123,19 @@ class Benchmarker:
             model_log = []
             llm = None
             llm_kwargs = {"model_path": model["path"], "n_gpu_layers": self.gpu_layers,
-                          "n_ctx": CONTEXT_SIZE, "verbose": False, "seed": 42}
+                          "n_ctx": CONTEXT_SIZE, "verbose": True, "seed": 42}
             try:
                 print(f"Loading {i+1}/{num_models}. {model["name"]} | ", end="", flush=True)
                 with utils.Silencer():
                     try:
                         llm = Llama(**llm_kwargs)
-                        print(f"Loaded!", end="", flush=True)
+                        print(f"Loaded! | ", end="", flush=True)
                         try:
                             templating = vlad_temps.TEMPLATES[family]
                             if CUSTOM_JINJA:
-                                template = templating["template"].replace("__RULE__", f"\"{SHARED_RPG_RULE}{NPC["role"]}\"")
+                                rule = f"{SHARED_RPG_RULE} {NPC["role"]} {REASONING_RULE[REASON]}"
+                                template = templating["template"].replace("__RULE__", f"\"{rule}\"")
+                                # print(template)
                                 formatter = Jinja2ChatFormatter(template=template,
                                                                         eos_token=templating["eos"],
                                                                         bos_token=templating["bos"])
@@ -116,11 +146,11 @@ class Benchmarker:
                                                                 eos_token=templating["eos"],
                                                                 bos_token=templating["bos"])
                                 self.formatter = formatter
-                            # llm.create_chat_completion(WARMUP, max_tokens=1)
+                            llm.create_chat_completion(WARMUP, max_tokens=4)
                             # self._cache(llm)
                             # self.formatter.add_generation_prompt = False
                             # print("KV Cache Primed!!", flush=True)
-                            # print("Warmuped!!", flush=True)
+                            print("Warmuped!!", flush=True)
                             # print
 
                         except Exception as e: raise MyException("Warmup error", str(e))
@@ -136,9 +166,10 @@ class Benchmarker:
                     for user_input in tqdm(mess, desc=f"Testing {model["name"]} on {name} queries", unit="query"):
                         chat_history.append({"role": "user", "content": user_input})
                         # print(self.formatter(messages=chat_history).prompt)
-                        ttft = TIMEOUT*2
+                        ttft, dialogue_ttft = TIMEOUT*2, -1
                         start_time = time.perf_counter()
                         assistant_response = []
+                        string_response = ""
 
                         stream = llm.create_chat_completion(messages=chat_history, stream=True, max_tokens=MAX_TOKENS)
                         for chunk in stream:
@@ -148,8 +179,12 @@ class Benchmarker:
                                 if 'content' in delta:
                                     ttft = min(current-start_time, ttft)
                                     assistant_response.append(delta['content'])
+                                    string_response += delta['content']
+                                    if dialogue_ttft < 0 and split_response(string_response, REASON)[1]:
+                                        dialogue_ttft = current-start_time
                             else: raise MyException("Timeout!", f"Ran out of time ({TIMEOUT} s)")
-                        string_response = "".join(assistant_response)
+                        format_ok = split_response(string_response, REASON)[2]
+                        if not format_ok: dialogue_ttft = -1
                         total_time = time.perf_counter() - start_time
                         gen_time = total_time - ttft
                         t_out = len(assistant_response)
@@ -157,10 +192,11 @@ class Benchmarker:
                         all_tokens = llm.n_tokens
                         t_in = len(llm.tokenize(user_input.encode("utf-8")))
 
+                        # the history keeps the raw reply so that it matches the KV cache, the CSV gets it trimmed
                         chat_history.append({"role": "assistant", "content": string_response})
                         # query = user_input[:].replace('\n', '|')
                         # response = assistant_response[:].replace('\n', '|')
-                        model_log.append([model["name"], ttft, tps, t_in, t_out, total_time, all_tokens, user_input, string_response])
+                        model_log.append([model["name"], ttft, tps, t_in, t_out, total_time, all_tokens, dialogue_ttft, int(format_ok), user_input, string_response.strip()])
                         prev_n = all_tokens
                     chat_history = CHAT_HISTORY[:]
                 print(f"{GREEN}FINISHED!!!{RESET}")
