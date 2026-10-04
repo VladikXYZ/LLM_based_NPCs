@@ -44,7 +44,7 @@ else:
     CHAT_HISTORY = [{"role": "system", "content": NPC["role"] + NPC["shared_system_prompt"]}]
     WARMUP = CHAT_HISTORY[:] + [{"role": "user", "content": "warmup"}]
 
-MESSAGES = [("long", LONGS), ("short", SHORTS)]
+MESSAGES = [("short", SHORTS), ("long", LONGS)]
 NUM_MESS = len(SHORTS+LONGS)
 CONTEXT_SIZE = 4096
 MAX_TOKENS = 64
