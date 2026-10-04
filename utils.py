@@ -10,8 +10,8 @@ from math import inf
 
 from llama_cpp import Llama
 from llama_cpp.llama_chat_format import Jinja2ChatFormatter
-from chat_templates import EOS_TOKENS, INFERENCE_TYPES, WARMUP_TYPES, TEMPLATES_INFERENCE
-
+# from chat_templates import EOS_TOKENS, INFERENCE_TYPES, WARMUP_TYPES, TEMPLATES_INFERENCE
+from vlad_temps import TEMPLATES
 DEVICES_FILE = "data/devices.json"
 MODELS_FILE = "data/models.json"
 MODELS_DIRECTORY = "models"
@@ -215,8 +215,16 @@ if __name__ == '__main__':
     #     json.dump(models_dicts, f, indent=1)
     #     # print("skibidi")
 
-    with open("data/models.json", "r") as f:
-        models = json.load(f)
-    for model in models:
-        print(model["name"])
+    with open("data/jb.json", "r") as f:
+        jbs = json.load(f)
+
+    # print(jbs["categories"])
+    jbs = jbs["categories"]
+    for jb in jbs:
+        tests = jbs[jb]["tests"]
+        for test in tests:
+            turns = test["turns"]
+            for i, turn in enumerate(turns):
+                print(f"{i}. {turn["prompt"]}")
+                print(turn["target_behavior"])
 

@@ -3,7 +3,6 @@ import os
 import json
 import sys
 import time
-from tabnanny import verbose
 
 import pandas
 import platform
