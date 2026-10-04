@@ -54,11 +54,7 @@ with open("data/shorts.json", "r") as f: SHORTS = json.load(f)
 with open("data/longs.json", "r") as f: LONGS = json.load(f)
 with open("data/data_3npcs.json") as file: NPC = json.load(file)[2]
 CUSTOM_JINJA = True
-# mini reasoning: set True here or pass --mini
-REASON = False
-if "--mini" in sys.argv:
-    sys.argv.remove("--mini")
-    REASON = True
+REASON = True
 if CUSTOM_JINJA:
     CHAT_HISTORY = []#[{"role": "system", "content": NPC["role"]}]
     WARMUP = []#CHAT_HISTORY[:]
@@ -68,8 +64,8 @@ else:
 
 MESSAGES = [("short", SHORTS), ("long", LONGS)]
 NUM_MESS = len(SHORTS+LONGS)
-CONTEXT_SIZE = 4096
-MAX_TOKENS = 96 if REASON else 64  # a plan and a dialogue need more room
+CONTEXT_SIZE = 4096+REASON*2048
+MAX_TOKENS = 64+REASON*32
 TIMEOUT = (NUM_MESS * (0.9 + (MAX_TOKENS / 5.5))).__ceil__()
 # DIALOGUE TTFT: seconds to the first dialogue (after the separator in mini reasoning), -1 if the format is wrong
 HEADER = ["MODEL", "TTFT", "T/s", "USER TOKENS", "NPC TOKENS", "TOTAL TIME", "ALL TOKENS", "DIALOGUE TTFT", "FORMAT OK", "PROMPT", "RESPONSE"]
