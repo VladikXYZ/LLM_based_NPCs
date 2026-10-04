@@ -69,7 +69,7 @@ else:
 MESSAGES = [("short", SHORTS), ("long", LONGS)]
 NUM_MESS = len(SHORTS+LONGS)
 CONTEXT_SIZE = 4096
-MAX_TOKENS = 128 if REASON else 64  # a plan and a dialogue need more room
+MAX_TOKENS = 96 if REASON else 64  # a plan and a dialogue need more room
 TIMEOUT = (NUM_MESS * (0.9 + (MAX_TOKENS / 5.5))).__ceil__()
 # DIALOGUE TTFT: seconds to the first dialogue (after the separator in mini reasoning), -1 if the format is wrong
 HEADER = ["MODEL", "TTFT", "T/s", "USER TOKENS", "NPC TOKENS", "TOTAL TIME", "ALL TOKENS", "DIALOGUE TTFT", "FORMAT OK", "PROMPT", "RESPONSE"]
