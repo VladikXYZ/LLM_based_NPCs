@@ -104,7 +104,7 @@ class Benchmarker:
             model_log = []
             llm = None
             llm_kwargs = {"model_path": model["path"], "n_gpu_layers": self.gpu_layers,
-                          "n_ctx": CONTEXT_SIZE, "verbose": False, "seed": 42}
+                          "n_ctx": CONTEXT_SIZE, "verbose": True, "seed": 42}
             try:
                 print(f"Loading {i+1}/{num_models}. {model["name"]} | ", end="", flush=True)
                 with utils.Silencer():
