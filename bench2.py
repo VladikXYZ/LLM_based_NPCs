@@ -18,13 +18,31 @@ import vlad_temps
 from utils import get_devices, get_models, MyException
 
 # The rules go into the templates inside double quotes, so they must not contain any.
-SHARED_RPG_RULE = "You are an NPC in a fantasy RPG. Reply with spoken dialogue only: no stage directions, actions, asterisks or quotation marks. Answer the player's exact question in at most 2 short sentences and volunteer nothing else. Use only facts from your knowledge base. Never invent names, places, people, items or events; if your knowledge base does not cover something, say in character that you do not know."
+SHARED_RPG_RULE = "You are an NPC in a fantasy RPG. Reply with spoken dialogue only: no stage directions, actions, asterisks or quotation marks. Answer the player's exact question in at most 2 short sentences and volunteer nothing else. Use only facts from your knowledge base. Never invent names, places, people, items or events."
 
+# Mini reasoning: the reply is "plan | dialogue". The separator is one token in the tokenizers of the models.
+SEPARATOR = "|"
 # Added after the shared rule: [no reasoning, mini reasoning], picked by REASON.
 REASONING_RULE = [
     "DO NOT THINK. Reply with the dialogue immediately.",
-    "OUTPUT FORMAT, mandatory in every reply: first a brief response plan (at most 2 sentences), then exactly one | separator, then the spoken dialogue. Example: The player wants directions, I will point the way. | The inn is past the well. The plan is not spoken: the dialogue rules apply only to the text after |.",
+    f"OUTPUT FORMAT, mandatory in every reply: first a one-sentence plan of how you will answer (not the answer itself), then exactly one {SEPARATOR} separator, then the spoken dialogue, which must never be empty and is the only part the rules above apply to. Example: Asked about the weather, I will grumble about the rain. {SEPARATOR} It has rained for three days.",
 ]
+# Leftovers of the model's own reasoning make a reply invalid.
+REASONING_TAGS = ("<think>", "</think>", "<|channel>", "<channel|>")
+
+
+def split_response(raw, mini):
+    """Return (plan, dialogue, format_ok). A malformed reply never yields dialogue."""
+    if any(tag in raw for tag in REASONING_TAGS):
+        return "", "", False
+    if not mini:
+        ok = bool(raw.strip()) and SEPARATOR not in raw
+        return "", raw.strip() if ok else "", ok
+    if raw.count(SEPARATOR) != 1:
+        return "", "", False
+    plan, dialogue = (part.strip() for part in raw.split(SEPARATOR))
+    ok = bool(plan and dialogue)
+    return plan, dialogue if ok else "", ok
 
 # MODEL_DIR = 'models/'
 # DEVICES_FILE = "devices.json"
@@ -36,7 +54,11 @@ with open("data/shorts.json", "r") as f: SHORTS = json.load(f)
 with open("data/longs.json", "r") as f: LONGS = json.load(f)
 with open("data/data_3npcs.json") as file: NPC = json.load(file)[2]
 CUSTOM_JINJA = True
+# mini reasoning: set True here or pass --mini
 REASON = False
+if "--mini" in sys.argv:
+    sys.argv.remove("--mini")
+    REASON = True
 if CUSTOM_JINJA:
     CHAT_HISTORY = []#[{"role": "system", "content": NPC["role"]}]
     WARMUP = []#CHAT_HISTORY[:]
@@ -47,9 +69,10 @@ else:
 MESSAGES = [("short", SHORTS), ("long", LONGS)]
 NUM_MESS = len(SHORTS+LONGS)
 CONTEXT_SIZE = 4096
-MAX_TOKENS = 64
+MAX_TOKENS = 128 if REASON else 64  # a plan and a dialogue need more room
 TIMEOUT = (NUM_MESS * (0.9 + (MAX_TOKENS / 5.5))).__ceil__()
-HEADER = ["MODEL", "TTFT", "T/s", "USER TOKENS", "NPC TOKENS", "TOTAL TIME", "ALL TOKENS", "PROMPT", "RESPONSE"]
+# DIALOGUE TTFT: seconds to the first dialogue (after the separator in mini reasoning), -1 if the format is wrong
+HEADER = ["MODEL", "TTFT", "T/s", "USER TOKENS", "NPC TOKENS", "TOTAL TIME", "ALL TOKENS", "DIALOGUE TTFT", "FORMAT OK", "PROMPT", "RESPONSE"]
 ERROR_ROW = [-1 for _ in range(len(HEADER)-2)]
 
 
@@ -147,9 +170,10 @@ class Benchmarker:
                     for user_input in tqdm(mess, desc=f"Testing {model["name"]} on {name} queries", unit="query"):
                         chat_history.append({"role": "user", "content": user_input})
                         # print(self.formatter(messages=chat_history).prompt)
-                        ttft = TIMEOUT*2
+                        ttft, dialogue_ttft = TIMEOUT*2, -1
                         start_time = time.perf_counter()
                         assistant_response = []
+                        string_response = ""
 
                         stream = llm.create_chat_completion(messages=chat_history, stream=True, max_tokens=MAX_TOKENS)
                         for chunk in stream:
@@ -159,8 +183,12 @@ class Benchmarker:
                                 if 'content' in delta:
                                     ttft = min(current-start_time, ttft)
                                     assistant_response.append(delta['content'])
+                                    string_response += delta['content']
+                                    if dialogue_ttft < 0 and split_response(string_response, REASON)[1]:
+                                        dialogue_ttft = current-start_time
                             else: raise MyException("Timeout!", f"Ran out of time ({TIMEOUT} s)")
-                        string_response = "".join(assistant_response)
+                        format_ok = split_response(string_response, REASON)[2]
+                        if not format_ok: dialogue_ttft = -1
                         total_time = time.perf_counter() - start_time
                         gen_time = total_time - ttft
                         t_out = len(assistant_response)
@@ -172,7 +200,7 @@ class Benchmarker:
                         chat_history.append({"role": "assistant", "content": string_response})
                         # query = user_input[:].replace('\n', '|')
                         # response = assistant_response[:].replace('\n', '|')
-                        model_log.append([model["name"], ttft, tps, t_in, t_out, total_time, all_tokens, user_input, string_response.strip()])
+                        model_log.append([model["name"], ttft, tps, t_in, t_out, total_time, all_tokens, dialogue_ttft, int(format_ok), user_input, string_response.strip()])
                         prev_n = all_tokens
                     chat_history = CHAT_HISTORY[:]
                 print(f"{GREEN}FINISHED!!!{RESET}")

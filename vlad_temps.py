@@ -246,20 +246,22 @@ TEMPLATES = {
 
     # The model ends its reply with a newline itself, so the one in front of <SPECIAL_12> must not be added
     # a second time: with two newlines the history no longer matches the KV cache.
+    # Every block ends with its newline. If the system block ended without it, the warmup would end in a
+    # different token than the same text has inside a full prompt, and the first query would miss the cache.
     "nemotron": {
         "bos": "",
         "eos": "<SPECIAL_12>",
         "template": """{%- set shared_prompt = __RULE__ -%}
-{{- '<SPECIAL_10>System\n' + shared_prompt -}}
+{{- '<SPECIAL_10>System\n' + shared_prompt + '\n' -}}
 {%- for message in messages -%}
     {%- if message.role == 'assistant' -%}
-        {{- '\n<SPECIAL_11>Assistant\n<think></think>' + message.content.rstrip() + '\n<SPECIAL_12>' -}}
+        {{- '<SPECIAL_11>Assistant\n<think></think>' + message.content.rstrip() + '\n<SPECIAL_12>\n' -}}
     {%- else -%}
-        {{- '\n<SPECIAL_11>User\n' + message.content -}}
+        {{- '<SPECIAL_11>User\n' + message.content + '\n' -}}
     {%- endif -%}
 {%- endfor -%}
 {%- if add_generation_prompt -%}
-{{- '\n<SPECIAL_11>Assistant\n<think></think>' -}}
+{{- '<SPECIAL_11>Assistant\n<think></think>' -}}
 {%- endif -%}"""
     }
 }
