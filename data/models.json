@@ -14,7 +14,7 @@
  {
   "name": "GLM 4.7 Flash A3B",
   "path": "models/GLM-4.7-Flash-Q4_K_M.gguf",
-  "family": "gemma",
+  "family": "glm",
   "params": 16947541728
  },
  {
@@ -26,7 +26,7 @@
  {
   "name": "LFM2 24B A2B q4_k_m",
   "path": "models/LFM2-24B-A2B-Q4_K_M.gguf",
-  "family": "chatml_nr",
+  "family": "chatml_bos",
   "params": 14415473952
  },
  {
@@ -98,7 +98,7 @@
  {
   "name": "LFM2.5 8B A1B",
   "path": "models/LFM2.5-8B-A1B-Q4_K_M.gguf",
-  "family": "chatml",
+  "family": "chatml_bos",
   "params": 5155564768
  },
  {
@@ -170,13 +170,13 @@
  {
   "name": "LFM2.5 2.6B",
   "path": "models/LFM2.5-2.6B-Q4_K_M.gguf",
-  "family": "chatml_nr",
+  "family": "chatml_bos",
   "params": 1674455040
  },
  {
   "name": "MiniCPM5 2B",
   "path": "models/MiniCPM5-2B-Q4_K_M.gguf",
-  "family": "chatml_nr",
+  "family": "chatml_bos",
   "params": 1561318368
  },
  {
@@ -200,13 +200,13 @@
  {
   "name": "LFM2.5 1.2B ",
   "path": "models/LFM2.5-1.2B-Instruct-Q4_K_M.gguf",
-  "family": "chatml_nr",
+  "family": "chatml_bos",
   "params": 730895168
  },
  {
   "name": "MiniCPM5 1B",
   "path": "models/MiniCPM5-1B-Q4_K_M.gguf",
-  "family": "chatml_nr",
+  "family": "chatml_bos",
   "params": 688065920
  },
  {
@@ -230,13 +230,13 @@
  {
   "name": "LFM2.5 350M",
   "path": "models/LFM2.5-350M-Q4_K_M.gguf",
-  "family": "chatml_nr",
+  "family": "chatml_bos",
   "params": 229312224
  },
  {
   "name": "LFM2.5 230M",
   "path": "models/LFM2.5-230M-Q4_K_M.gguf",
-  "family": "chatml_nr",
+  "family": "chatml_bos",
   "params": 153406304
  }
 ]

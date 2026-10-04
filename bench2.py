@@ -72,9 +72,11 @@ class Benchmarker:
         self._run_benchmark()
 
     def _cache(self, llm):
-        warmup_prompt = self.formatter(messages=WARMUP, not_generate=True).prompt
+        self.formatter.add_generation_prompt = False
+        warmup_prompt = self.formatter(messages=WARMUP).prompt
         warmup_tokens = llm.tokenize(warmup_prompt.encode("utf-8"), add_bos=False, special=True)
         llm.eval(warmup_tokens)
+        self.formatter.add_generation_prompt = True
         # print(warmup_prompt)
         return len(warmup_tokens)
 
@@ -93,7 +95,7 @@ class Benchmarker:
             model_log = []
             llm = None
             llm_kwargs = {"model_path": model["path"], "n_gpu_layers": self.gpu_layers,
-                          "n_ctx": CONTEXT_SIZE, "verbose": False, "seed": 42}
+                          "n_ctx": CONTEXT_SIZE, "verbose": False, "seed": 42, "temperature": 0}
             try:
                 print(f"Loading {i+1}/{num_models}. {model["name"]} | ", end="", flush=True)
                 with utils.Silencer():
@@ -101,7 +103,7 @@ class Benchmarker:
                         llm = Llama(**llm_kwargs)
                         print(f"Loaded!", end="", flush=True)
                         try:
-                            templating = vlad_temps.TEMPLATES_INFERENCE[family]
+                            templating = vlad_temps.TEMPLATES[family]
                             if CUSTOM_JINJA:
                                 template = templating["template"].replace("__RULE__", f"\"{SHARED_RPG_RULE}\"")
                                 formatter = Jinja2ChatFormatter(template=template,
