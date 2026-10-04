@@ -54,7 +54,7 @@ with open("data/shorts.json", "r") as f: SHORTS = json.load(f)
 with open("data/longs.json", "r") as f: LONGS = json.load(f)
 with open("data/data_3npcs.json") as file: NPC = json.load(file)[2]
 CUSTOM_JINJA = True
-REASON = True
+REASON = False
 if CUSTOM_JINJA:
     CHAT_HISTORY = []#[{"role": "system", "content": NPC["role"]}]
     WARMUP = []#CHAT_HISTORY[:]
