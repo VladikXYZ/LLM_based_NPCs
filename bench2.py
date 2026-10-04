@@ -168,10 +168,11 @@ class Benchmarker:
                         all_tokens = llm.n_tokens
                         t_in = len(llm.tokenize(user_input.encode("utf-8")))
 
+                        # the history keeps the raw reply so that it matches the KV cache, the CSV gets it trimmed
                         chat_history.append({"role": "assistant", "content": string_response})
                         # query = user_input[:].replace('\n', '|')
                         # response = assistant_response[:].replace('\n', '|')
-                        model_log.append([model["name"], ttft, tps, t_in, t_out, total_time, all_tokens, user_input, string_response])
+                        model_log.append([model["name"], ttft, tps, t_in, t_out, total_time, all_tokens, user_input, string_response.strip()])
                         prev_n = all_tokens
                     chat_history = CHAT_HISTORY[:]
                 print(f"{GREEN}FINISHED!!!{RESET}")

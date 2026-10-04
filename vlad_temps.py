@@ -244,6 +244,8 @@ TEMPLATES = {
 {%- endif -%}"""
     },
 
+    # The model ends its reply with a newline itself, so the one in front of <SPECIAL_12> must not be added
+    # a second time: with two newlines the history no longer matches the KV cache.
     "nemotron": {
         "bos": "",
         "eos": "<SPECIAL_12>",
@@ -251,7 +253,7 @@ TEMPLATES = {
 {{- '<SPECIAL_10>System\n' + shared_prompt -}}
 {%- for message in messages -%}
     {%- if message.role == 'assistant' -%}
-        {{- '\n<SPECIAL_11>Assistant\n<think></think>' + message.content + '\n<SPECIAL_12>' -}}
+        {{- '\n<SPECIAL_11>Assistant\n<think></think>' + message.content.rstrip() + '\n<SPECIAL_12>' -}}
     {%- else -%}
         {{- '\n<SPECIAL_11>User\n' + message.content -}}
     {%- endif -%}
