@@ -16,6 +16,8 @@ REASONING_RULE = [
 ]
 REASON = False
 CUSTOM_JINJA = True
+CONTEXT_SIZE = 4096+REASON*2048
+MAX_TOKENS = 64+REASON*32
 
 def run_jailbreak_benchmark(output_file: str = "jailbreak_results.csv"):
     devices = utils.get_devices()
@@ -24,28 +26,21 @@ def run_jailbreak_benchmark(output_file: str = "jailbreak_results.csv"):
     gpu_layers = -1 if device["type"] == "Vulkan" else 0
     os.environ["GGML_VK_VISIBLE_DEVICES"] = str(device["id"] * (device["type"] == "Vulkan"))
     models = utils.get_models()
-    with open("data/data_3npcs.json", "r", encoding="utf-8") as f:
-        npcs = json.load(f)
-    with open("data/vlad_jb.json", "r", encoding="utf-8") as f:
-        jailbreaks = json.load(f)
+    with open("data/data_3npcs.json", "r", encoding="utf-8") as f: npcs = json.load(f)
+    with open("data/vlad_jb.json", "r", encoding="utf-8") as f: jailbreaks = json.load(f)
     log_data = []
 
     for model in models:
         family = model.get("family", "")
-        print(f"\n--- Loading {model['name']} (Family: {family}) ---")
+        print(f"Loading {model['name']} | ", end="")
         try:
-            llm = Llama(
-                model_path=model["path"],
-                n_gpu_layers=gpu_layers,
-                n_ctx=4096,
-                verbose=False
-            )
+            llm = Llama(model_path=model["path"], n_gpu_layers=gpu_layers, n_ctx=CONTEXT_SIZE, verbose=False)
+            print("Loaded!!!")
         except Exception as e:
             print(f"Skipping {model['name']}, failed to load: {e}")
             continue
 
         for npc in npcs:
-            # npc_role_label = f"{npc['name']} ({npc['profession']})"
             CHAT_HISTORY = []
             rule = f"{SHARED_RPG_RULE} {npc['role']} {REASONING_RULE[REASON]}"
             if CUSTOM_JINJA or REASON:
@@ -58,36 +53,38 @@ def run_jailbreak_benchmark(output_file: str = "jailbreak_results.csv"):
                 CHAT_HISTORY.append({"role": "system", "content": rule})
 
             desc = f"{model['name']} | {npc['name']}"
-            for test_id, prompts, targets in tqdm(jailbreaks, desc=desc, unit="scenario"):
-                chat_history = CHAT_HISTORY[:]
+            total_prompts = sum(len(prompts) for _, prompts, _ in jailbreaks)
 
-                for turn_idx, (raw_query, target) in enumerate(zip(prompts, targets)):
-                    # Replace macros with current NPC data[cite: 2, 3]
-                    query = (
-                        raw_query.replace("$$$NPC_NAME$$$", npc["name"])
-                        .replace("$$$NPC_PROFESSION$$$", npc["profession"])
-                        .replace("$$$NPC_CATCHPHRASE$$$", "By the gods")
-                    )
+            with tqdm(total=total_prompts, desc=desc, unit="prompt") as pbar:
+                for test_id, prompts, targets in jailbreaks:
+                    chat_history = CHAT_HISTORY[:]
 
-                    chat_history.append({"role": "user", "content": query})
-                    try:
-                        response = llm.create_chat_completion(messages=chat_history, max_tokens=64)
-                        response_text = response['choices'][0]['message']['content']
+                    for raw_query, target in zip(prompts, targets):
+                        query = (
+                            raw_query.replace("$$$NPC_NAME$$$", npc["name"])
+                            .replace("$$$NPC_PROFESSION$$$", npc["profession"])
+                            .replace("$$$NPC_CATCHPHRASE$$$", "By the gods")
+                        )
 
-                    except Exception as err:
-                        response_text = f"INFERENCE_ERROR: {err}"
+                        chat_history.append({"role": "user", "content": query})
+                        try:
+                            response = llm.create_chat_completion(messages=chat_history, max_tokens=64)
+                            response_text = response['choices'][0]['message']['content']
+                        except Exception as err:
+                            response_text = f"INFERENCE_ERROR: {err}"
 
-                    response_text = response_text.strip()
-                    chat_history.append({"role": "assistant", "content": response_text})
+                        response_text = response_text.strip()
+                        chat_history.append({"role": "assistant", "content": response_text})
 
-                    log_data.append({
-                        "model": model["name"],
-                        "npc_role": npc["role"],
-                        "test_id": test_id,
-                        "query": query,
-                        "response": response_text,
-                        "target": target
-                    })
+                        log_data.append({
+                            "model": model["name"],
+                            "npc_role": npc["role"],
+                            "test_id": test_id,
+                            "query": query,
+                            "response": response_text,
+                            "target": target
+                        })
+                        pbar.update(1)
             df = pd.DataFrame(log_data)
             df.to_csv(output_file, index=False, encoding="utf-8")
         if hasattr(llm, "close"):
