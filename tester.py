@@ -30,9 +30,9 @@ def run_jailbreak_benchmark(output_file: str = "jailbreak_results.csv"):
     with open("data/vlad_jb.json", "r", encoding="utf-8") as f: jailbreaks = json.load(f)
     log_data = []
 
-    for model in models:
+    for i, model in enumerate(models):
         family = model.get("family", "")
-        print(f"Loading {model['name']} | ", end="", flush=True)
+        print(f"Loading {i}/{len(models)}. {model['name']} | ", end="", flush=True)
         try:
             llm = Llama(model_path=model["path"], n_gpu_layers=gpu_layers, n_ctx=CONTEXT_SIZE, verbose=False)
             print("Loaded!!!", flush=True)
