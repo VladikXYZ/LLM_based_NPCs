@@ -220,11 +220,21 @@ if __name__ == '__main__':
 
     # print(jbs["categories"])
     jbs = jbs["categories"]
-    for jb in jbs:
+    jailbreak_tets = []
+    for i, jb in enumerate(jbs):
         tests = jbs[jb]["tests"]
-        for test in tests:
+        for j,test in enumerate(tests):
+            print(test["test_id"])
             turns = test["turns"]
-            for i, turn in enumerate(turns):
-                print(f"{i}. {turn["prompt"]}")
+            messages = []
+            targets = []
+            for k, turn in enumerate(turns):
+                print(f"{i}.{j}.{k} {turn["prompt"]}")
                 print(turn["target_behavior"])
+                messages.append(turn["prompt"])
+                targets.append(turn["target_behavior"])
+            jailbreak_tets.append((test["test_id"], messages, targets))
+    with open("data/vlad_jb.json", "w") as f:
+        json.dump(jailbreak_tets, f, indent=1)
+
 
