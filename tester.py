@@ -32,12 +32,12 @@ def run_jailbreak_benchmark(output_file: str = "jailbreak_results.csv"):
 
     for model in models:
         family = model.get("family", "")
-        print(f"Loading {model['name']} | ", end="")
+        print(f"Loading {model['name']} | ", end="", flush=True)
         try:
             llm = Llama(model_path=model["path"], n_gpu_layers=gpu_layers, n_ctx=CONTEXT_SIZE, verbose=False)
-            print("Loaded!!!")
+            print("Loaded!!!", flush=True)
         except Exception as e:
-            print(f"Skipping {model['name']}, failed to load: {e}")
+            print(f"Skipping {model['name']}, failed to load: {e}", flush=True)
             continue
 
         for npc in npcs:
