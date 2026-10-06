@@ -1,7 +1,7 @@
 import os
 import json
 import pandas as pd
-from llama_cpp import Llama
+from llama_cpp import Llama, LlamaRAMCache, llama_cpp
 from llama_cpp.llama_chat_format import Jinja2ChatFormatter
 from tqdm import tqdm
 
@@ -19,7 +19,7 @@ CUSTOM_JINJA = True
 CONTEXT_SIZE = 4096+REASON*2048
 MAX_TOKENS = 64+REASON*32
 
-def run_jailbreak_benchmark(output_file: str = "jailbreak_results.csv"):
+def run_jailbreak_benchmark(output_file: str = "jailbreak_results_test.csv"):
     devices = utils.get_devices()
     device = devices[0]
     print(f"Using default device: {device['type']} | {device['name']}")
@@ -28,13 +28,14 @@ def run_jailbreak_benchmark(output_file: str = "jailbreak_results.csv"):
     models = utils.get_models()
     with open("data/data_3npcs.json", "r", encoding="utf-8") as f: npcs = json.load(f)
     with open("data/vlad_jb.json", "r", encoding="utf-8") as f: jailbreaks = json.load(f)
+    total_prompts = sum(len(prompts) for _, prompts, _ in jailbreaks)
     log_data = []
 
     for i, model in enumerate(models):
         family = model.get("family", "")
-        print(f"Loading {i}/{len(models)}. {model['name']} | ", end="", flush=True)
+        print(f"Loading {i+1}/{len(models)}. {model['name']} | ", end="", flush=True)
         try:
-            llm = Llama(model_path=model["path"], n_gpu_layers=gpu_layers, n_ctx=CONTEXT_SIZE, verbose=False)
+            llm = Llama(model_path=model["path"], n_gpu_layers=gpu_layers, n_ctx=CONTEXT_SIZE, verbose=False, flash_attn=True, n_threads=6)
             print("Loaded!!!", flush=True)
         except Exception as e:
             print(f"Skipping {model['name']}, failed to load: {e}", flush=True)
@@ -43,17 +44,20 @@ def run_jailbreak_benchmark(output_file: str = "jailbreak_results.csv"):
         for npc in npcs:
             CHAT_HISTORY = []
             rule = f"{SHARED_RPG_RULE} {npc['role']} {REASONING_RULE[REASON]}"
+            templating = vlad_temps.TEMPLATES[family]
             if CUSTOM_JINJA or REASON:
-                templating = vlad_temps.TEMPLATES[family]
+
                 template = templating["template"].replace("__RULE__", f"\"{rule}\"")
 
                 formatter = Jinja2ChatFormatter(template=template, eos_token=templating["eos"], bos_token=templating["bos"])
                 llm.chat_handler = formatter.to_chat_handler()
             else:
                 CHAT_HISTORY.append({"role": "system", "content": rule})
+                formatter = Jinja2ChatFormatter(template=llm.metadata.get("tokenizer.chat_template"),
+                                                eos_token=templating["eos"],
+                                                bos_token=templating["bos"])
 
             desc = f"{model['name']} | {npc['name']}"
-            total_prompts = sum(len(prompts) for _, prompts, _ in jailbreaks)
 
             with tqdm(total=total_prompts, desc=desc, unit="prompt") as pbar:
                 for test_id, prompts, targets in jailbreaks:

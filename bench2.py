@@ -122,7 +122,7 @@ class Benchmarker:
             model_log = []
             llm = None
             llm_kwargs = {"model_path": model["path"], "n_gpu_layers": self.gpu_layers,
-                          "n_ctx": CONTEXT_SIZE, "verbose": True, "seed": 42}
+                          "n_ctx": CONTEXT_SIZE, "verbose": True, "seed": 42, "flash_attn": True}
             try:
                 print(f"Loading {i+1}/{num_models}. {model["name"]} | ", end="", flush=True)
                 with utils.Silencer():
@@ -156,7 +156,7 @@ class Benchmarker:
                     except Exception as e:
                         if type(e) != MyException: raise MyException("Loading error", str(e))
 
-                if not llm: raise MyException("Something went wron", "xdd")
+                if not llm: raise MyException("Something went wrong", "xdd")
                 model_start = time.perf_counter()
                 timeout = TIMEOUT
 
