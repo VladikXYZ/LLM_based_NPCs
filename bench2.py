@@ -14,7 +14,7 @@ from tqdm import tqdm
 
 import utils
 import vlad_temps
-from utils import get_devices, get_models, MyException
+from utils import get_devices, get_models, MyException, REASON, CUSTOM_JINJA, CHAT_HISTORY, WARMUP
 
 # The rules go into the templates inside double quotes, so they must not contain any.
 SHARED_RPG_RULE = "You are an NPC in a fantasy RPG. Reply with spoken dialogue only: no stage directions, actions, asterisks or quotation marks. Answer the player's exact question in at most 2 short sentences and volunteer nothing else. Use only facts from your knowledge base. Never invent names, places, people, items or events."
@@ -52,20 +52,12 @@ LOG_DIR = ""
 with open("data/shorts.json", "r") as f: SHORTS = json.load(f)
 with open("data/longs.json", "r") as f: LONGS = json.load(f)
 with open("data/data_3npcs.json") as file: NPC = json.load(file)[2]
-CUSTOM_JINJA = True
-REASON = False
-if CUSTOM_JINJA:
-    CHAT_HISTORY = []#[{"role": "system", "content": NPC["role"]}]
-    WARMUP = []#CHAT_HISTORY[:]
-else:
-    CHAT_HISTORY = [{"role": "system", "content": NPC["role"] + NPC["shared_system_prompt"]}]
-    WARMUP = CHAT_HISTORY[:] + [{"role": "user", "content": "warmup"}]
 
 MESSAGES = [("short", SHORTS), ("long", LONGS)]
 NUM_MESS = len(SHORTS+LONGS)
 CONTEXT_SIZE = 4096+REASON*2048
 MAX_TOKENS = 64+REASON*32
-TIMEOUT = (2 + NUM_MESS * (0.9 + (MAX_TOKENS / 5.5))).__ceil__()
+TIMEOUT = (4 + NUM_MESS * (0.85 + (MAX_TOKENS / 5.75))).__ceil__()
 # DIALOGUE TTFT: seconds to the first dialogue (after the separator in mini reasoning), -1 if the format is wrong
 HEADER = ["MODEL", "TTFT", "T/s", "USER TOKENS", "NPC TOKENS", "TOTAL TIME", "ALL TOKENS", "DIALOGUE TTFT", "FORMAT OK", "PROMPT", "RESPONSE"]
 ERROR_ROW = [-1 for _ in range(len(HEADER)-2)]
@@ -127,39 +119,36 @@ class Benchmarker:
             model_log = []
             llm = None
             llm_kwargs = {"model_path": model["path"], "n_gpu_layers": self.gpu_layers,
-                          "n_ctx": CONTEXT_SIZE, "verbose": True, "seed": 42, "flash_attn": True}
+                          "n_ctx": CONTEXT_SIZE, "verbose": True, "seed": 42}
             try:
                 print(f"Loading {i+1}/{num_models}. {model["name"]} | ", end="", flush=True)
-                with utils.Silencer():
-                    try:
-                        llm = Llama(**llm_kwargs)
-                        print(f"Loaded! | ", end="", flush=True)
-                        try:
-                            templating = vlad_temps.TEMPLATES[family]
-                            if CUSTOM_JINJA:
-                                rule = f"{SHARED_RPG_RULE} {NPC["role"]} {REASONING_RULE[REASON]}"
-                                template = templating["template"].replace("__RULE__", f"\"{rule}\"")
-                                # print(template)
-                                formatter = Jinja2ChatFormatter(template=template,
-                                                                        eos_token=templating["eos"],
-                                                                        bos_token=templating["bos"])
-                                llm.chat_handler = formatter.to_chat_handler()
-                                self.formatter = formatter
-                            else:
-                                formatter = Jinja2ChatFormatter(template=llm.metadata.get("tokenizer.chat_template"),
-                                                                eos_token=templating["eos"],
-                                                                bos_token=templating["bos"])
-                                self.formatter = formatter
-                            llm.create_chat_completion(WARMUP, max_tokens=4)
-                            # self._cache(llm)
-                            # self.formatter.add_generation_prompt = False
-                            # print("KV Cache Primed!!", flush=True)
-                            print("Warmuped!!", flush=True)
-                            # print
-
-                        except Exception as e: raise MyException("Warmup error", str(e))
-                    except Exception as e:
-                        if type(e) != MyException: raise MyException("Loading error", str(e))
+                # with utils.Silencer():
+                #     try:
+                #         llm = Llama(**llm_kwargs)
+                #         print(f"Loaded! | ", end="", flush=True)
+                #         try:
+                #             templating = vlad_temps.TEMPLATES[family]
+                #             if CUSTOM_JINJA or REASON:
+                #                 rule = f"{SHARED_RPG_RULE} {NPC["role"]} {REASONING_RULE[REASON]}"
+                #                 template = templating["template"].replace("__RULE__", f"\"{rule}\"")
+                #                 formatter = Jinja2ChatFormatter(template=template,
+                #                                                         eos_token=templating["eos"],
+                #                                                         bos_token=templating["bos"])
+                #                 llm.chat_handler = formatter.to_chat_handler()
+                #                 self.formatter = formatter
+                #             else:
+                #                 formatter = Jinja2ChatFormatter(template=llm.metadata.get("tokenizer.chat_template"),
+                #                                                 eos_token=templating["eos"],
+                #                                                 bos_token=templating["bos"])
+                #                 self.formatter = formatter
+                #             llm.create_chat_completion(WARMUP, max_tokens=4)
+                #             print("Warmuped!!", flush=True)
+                #
+                #         except Exception as e: raise MyException("Warmup error", str(e))
+                #     except Exception as e:
+                #         if type(e) != MyException: raise MyException("Loading error", str(e))
+                llm, self.formatter = utils.better_load(model, llm_kwargs)
+                # print(self.formatter)
 
                 if not llm: raise MyException("Something went wrong", "xdd")
                 model_start = time.perf_counter()
@@ -195,13 +184,13 @@ class Benchmarker:
                         t_out = len(assistant_response)
                         tps = (t_out - 1) / gen_time if gen_time > 0 else -1
                         all_tokens = llm.n_tokens
-                        t_in = len(llm.tokenize(user_input.encode("utf-8")))
+                        t_in = all_tokens - prev_n - t_out#len(llm.tokenize(user_input.encode("utf-8")))
 
                         # the history keeps the raw reply so that it matches the KV cache, the CSV gets it trimmed
                         chat_history.append({"role": "assistant", "content": string_response})
                         # query = user_input[:].replace('\n', '|')
                         # response = assistant_response[:].replace('\n', '|')
-                        model_log.append([model["name"], ttft, tps, t_in, t_out, total_time, all_tokens, dialogue_ttft, int(format_ok), user_input, string_response.strip()])
+                        model_log.append([model["name"], ttft, tps, t_in, t_out, total_time, all_tokens, dialogue_ttft, int(format_ok), user_input, assistant_response])
                         prev_n = all_tokens
                     chat_history = CHAT_HISTORY[:]
                 print(f"{GREEN}FINISHED!!!{RESET}")

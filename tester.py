@@ -14,8 +14,15 @@ REASONING_RULE = [
     "DO NOT THINK. Reply with the dialogue immediately.",
     f"OUTPUT FORMAT, mandatory in every reply: first a one-sentence plan of how you will answer (not the answer itself), then exactly one {SEPARATOR} separator, then the spoken dialogue, which must never be empty and is the only part the rules above apply to. Example: Asked about the weather, I will grumble about the rain. {SEPARATOR} It has rained for three days.",
 ]
-REASON = False
 CUSTOM_JINJA = True
+REASON = False
+with open("data/data_3npcs.json") as file: NPC = json.load(file)[2]
+if CUSTOM_JINJA or REASON:
+    CHAT_HISTORY = []
+    WARMUP = []
+else:
+    CHAT_HISTORY = [{"role": "system", "content": NPC["role"] + NPC["shared_system_prompt"]}]
+    WARMUP = CHAT_HISTORY[:] + [{"role": "user", "content": "warmup"}]
 CONTEXT_SIZE = 4096+REASON*2048
 MAX_TOKENS = 64+REASON*32
 
@@ -53,9 +60,6 @@ def run_jailbreak_benchmark(output_file: str = "jailbreak_results_test.csv"):
                 llm.chat_handler = formatter.to_chat_handler()
             else:
                 CHAT_HISTORY.append({"role": "system", "content": rule})
-                formatter = Jinja2ChatFormatter(template=llm.metadata.get("tokenizer.chat_template"),
-                                                eos_token=templating["eos"],
-                                                bos_token=templating["bos"])
 
             desc = f"{model['name']} | {npc['name']}"
 

@@ -10,11 +10,34 @@ from math import inf
 
 from llama_cpp import Llama
 from llama_cpp.llama_chat_format import Jinja2ChatFormatter
+
+import vlad_temps
 # from chat_templates import EOS_TOKENS, INFERENCE_TYPES, WARMUP_TYPES, TEMPLATES_INFERENCE
 from vlad_temps import TEMPLATES
 DEVICES_FILE = "data/devices.json"
 MODELS_FILE = "data/models.json"
 MODELS_DIRECTORY = "models"
+
+SHARED_RPG_RULE = "You are an NPC in a fantasy RPG. Reply with spoken dialogue only: no stage directions, actions, asterisks or quotation marks. Answer the player's exact question in at most 2 short sentences and volunteer nothing else. Use only facts from your knowledge base. Never invent names, places, people, items or events."
+SEPARATOR = "|"
+REASONING_RULE = [
+    "DO NOT THINK. Reply with the dialogue immediately.",
+    f"OUTPUT FORMAT, mandatory in every reply: first a one-sentence plan of how you will answer (not the answer itself), then exactly one {SEPARATOR} separator, then the spoken dialogue, which must never be empty and is the only part the rules above apply to. Example: Asked about the weather, I will grumble about the rain. {SEPARATOR} It has rained for three days.",
+]
+REASONING_TAGS = ("<think>", "</think>", "<|channel>", "<channel|>")
+
+CUSTOM_JINJA = True
+REASON = False
+with open("data/data_3npcs.json") as file: NPC = json.load(file)[2]
+if CUSTOM_JINJA or REASON:
+    CHAT_HISTORY = []
+    WARMUP = []
+else:
+    CHAT_HISTORY = [{"role": "system", "content": NPC["role"] + NPC["shared_system_prompt"]}]
+    WARMUP = CHAT_HISTORY[:] + [{"role": "user", "content": "warmup"}]
+CONTEXT_SIZE = 4096+REASON*2048
+MAX_TOKENS = 64+REASON*32
+TEMPLATES = vlad_temps.TEMPLATES
 
 class MyException(Exception):
     def __init__(self, error_type, message):
@@ -111,9 +134,6 @@ def get_models():
     return usable
 
 
-with open("data/temps.json") as f:
-    TEMPLATES = json.load(f)
-
 def get_handlers(family: str, custom: bool, reason: bool):
     if not family or not custom: return None, None
 
@@ -131,6 +151,47 @@ def get_handlers(family: str, custom: bool, reason: bool):
     #     return handler_inference, handler_warmup
     return handler_inference, None
 
+def better_load(model, llm_kwargs):
+    llm, err = None, None
+    with Silencer():
+        try:
+            llm = Llama(**llm_kwargs)
+            print(f"Loaded! | ", end="", flush=True)
+
+            try:
+                templating = TEMPLATES[model["family"]]
+                if CUSTOM_JINJA or REASON:
+                    rule = f"{SHARED_RPG_RULE} {NPC["role"]} {REASONING_RULE[REASON]}"
+                    template = templating["template"].replace("__RULE__", f"\"{rule}\"")
+                    formatter = Jinja2ChatFormatter(template=template,
+                                                    eos_token=templating["eos"],
+                                                    bos_token=templating["bos"])
+                    llm.chat_handler = formatter.to_chat_handler()
+                else:
+                    formatter = Jinja2ChatFormatter(template=llm.metadata.get("tokenizer.chat_template"),
+                                                    eos_token=templating["eos"],
+                                                    bos_token=templating["bos"])
+                llm.create_chat_completion(WARMUP, max_tokens=1)
+                print("Warmuped!!", flush=True)
+                return llm, formatter
+
+            except Exception as e:
+                if hasattr(llm, 'close'): llm.close()
+                del llm
+                err = f"Crashed during generation: {e}"
+        except Exception as e:
+            err = f"Crashed during loading: {e}"
+
+    if err:
+        llm_kwargs["verbose"] = True
+        with Catcher() as c:
+            try:
+                llm = Llama(**llm_kwargs)
+                llm.create_chat_completion(WARMUP, max_tokens=1)
+            except:
+                llm = None
+        print("")
+        raise MyException(err, c[0])
 
 def load_llm(model, llm_kwargs, warmup_inputs=[{"role":"user", "content":"warmup!"}], custom_jinja=False, reason = False, log = False):
     print(f"Loading {model["name"]} | ", end="", flush=True)
