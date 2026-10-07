@@ -168,7 +168,7 @@ class Benchmarker:
                 for name, mess in MESSAGES:
                     prev_n = self._cache(llm)
                     is_long ^= True
-                    for i, user_input in tqdm(enumerate(mess), desc=f"Testing {model["name"]} on {name} queries", unit="query", file=sys.stdout, dynamic_ncols=False):
+                    for i, user_input in tqdm(enumerate(mess), total=len(mess), desc=f"Testing {model["name"]} on {name} queries", unit="query", file=sys.stdout, dynamic_ncols=True):
                         chat_history.append({"role": "user", "content": user_input})
                         # print(self.formatter(messages=chat_history).prompt)
                         ttft, dialogue_ttft = TIMEOUT*2, -1
