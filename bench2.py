@@ -237,7 +237,7 @@ if __name__ == '__main__':
             start = time.time()
             for j in range(len(devices)):
                 prev = time.time()
-                subprocess.run([sys.executable, "bench.py", str(j)])
+                subprocess.run([sys.executable, "bench2.py", str(j)])
                 print(f"This took {time.time() - prev} seconds")
             print(f"All tests took {time.time() - start} seconds")
         else: Benchmarker(num)
