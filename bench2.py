@@ -65,7 +65,7 @@ MESSAGES = [("short", SHORTS), ("long", LONGS)]
 NUM_MESS = len(SHORTS+LONGS)
 CONTEXT_SIZE = 4096+REASON*2048
 MAX_TOKENS = 64+REASON*32
-TIMEOUT = (NUM_MESS * (0.9 + (MAX_TOKENS / 5.5))).__ceil__()
+TIMEOUT = (2 + NUM_MESS * (0.9 + (MAX_TOKENS / 5.5))).__ceil__()
 # DIALOGUE TTFT: seconds to the first dialogue (after the separator in mini reasoning), -1 if the format is wrong
 HEADER = ["MODEL", "TTFT", "T/s", "USER TOKENS", "NPC TOKENS", "TOTAL TIME", "ALL TOKENS", "DIALOGUE TTFT", "FORMAT OK", "PROMPT", "RESPONSE"]
 ERROR_ROW = [-1 for _ in range(len(HEADER)-2)]
@@ -109,6 +109,10 @@ class Benchmarker:
 
     def _run_benchmark(self):
         dev_name = self.device["type"] + "_" + "_".join(self.device["name"].split())
+        log_file = open(f"{dev_name}.log", "w")
+
+        # Redirect the OS-level stderr (where llama.cpp prints) directly into the log file
+        os.dup2(log_file.fileno(), sys.stderr.fileno())
 
         log = []
         num_models = len(self.models)
@@ -118,6 +122,7 @@ class Benchmarker:
 
 
         for i, model in enumerate(self.models):
+            print(f"--- {model['name']} ---", file=sys.stderr)
             family = model["family"]
             model_log = []
             llm = None
@@ -159,17 +164,18 @@ class Benchmarker:
                 if not llm: raise MyException("Something went wrong", "xdd")
                 model_start = time.perf_counter()
                 timeout = TIMEOUT
-
+                is_long = True
                 for name, mess in MESSAGES:
                     prev_n = self._cache(llm)
-                    for user_input in tqdm(mess, desc=f"Testing {model["name"]} on {name} queries", unit="query"):
+                    is_long ^= True
+                    for i, user_input in tqdm(enumerate(mess), desc=f"Testing {model["name"]} on {name} queries", unit="query", file=sys.stdout, dynamic_ncols=False):
                         chat_history.append({"role": "user", "content": user_input})
                         # print(self.formatter(messages=chat_history).prompt)
                         ttft, dialogue_ttft = TIMEOUT*2, -1
                         start_time = time.perf_counter()
                         assistant_response = []
                         string_response = ""
-
+                        print(f"[{model["name"]}] {i}. {"long" if is_long else "short"} query", file=sys.stderr, flush=True)
                         stream = llm.create_chat_completion(messages=chat_history, stream=True, max_tokens=MAX_TOKENS)
                         for chunk in stream:
                             current = time.perf_counter()
