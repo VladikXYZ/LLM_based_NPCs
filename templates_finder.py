@@ -2,7 +2,7 @@ import os
 from llama_cpp import Llama
 
 MODEL_DIR = "models/"
-OUTPUT_FILE = "outcomes/extracted_templates.txt"
+OUTPUT_FILE = "outcomes/extracted_templates_flash.txt"
 
 # Find all .gguf files in your models directory
 gguf_files = sorted([f for f in os.listdir(MODEL_DIR) if f.endswith(".gguf")])
@@ -21,7 +21,7 @@ for model_file in gguf_files:
 
     try:
         # Load only the metadata headers without allocating weights to VRAM/RAM
-        llm = Llama(model_path=model_path, n_ctx=8, verbose=False)
+        llm = Llama(model_path=model_path, n_ctx=8, verbose=False, flash_attn=True)
 
         # Extract chat template from metadata
         template = llm.metadata.get("tokenizer.chat_template")

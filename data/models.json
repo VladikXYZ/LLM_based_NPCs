@@ -72,6 +72,12 @@
   "params": 6166578784
  },
  {
+  "name": "Lythri 7B A4B",
+  "path": "models/Lythri-7B-A4B-Q4_0_8.gguf",
+  "family": "gemma_think",
+  "params": 6166578784
+ },
+ {
   "name": "maple preview",
   "path": "models/maple-preview-TQ2_0-head-Q4_K.gguf",
   "family": "chatml",
@@ -130,6 +136,12 @@
   "path": "models/Bonsai-27B-Q1_0.gguf",
   "family": "chatml",
   "params": 3803452480
+ },
+ {
+  "name": "Lythri 4B A2B",
+  "path": "models/Lythri-4B-A2B-Q4_0_8.gguf",
+  "family": "gemma_think",
+  "params": 6166578784
  },
  {
   "name": "Gemma 4 E2B",
