@@ -227,6 +227,26 @@ TEMPLATES = {
 {%- endif -%}"""
     },
 
+    # Lythri: gemma 4 turn markers, but it reasons in a plain-text <think> block (not gemma's thought
+    # channel), so the reply starts after an empty one.
+    "lythri": {
+        "bos": "<bos>",
+        "eos": "<turn|>",
+        "template": """{%- set shared_prompt = __RULE__ -%}
+{{- bos_token if bos_token is defined else '' -}}
+{{- '<|turn>system\n' + shared_prompt + '<turn|>\n' -}}
+{%- for message in messages -%}
+    {%- if message.role == 'assistant' -%}
+        {{- '<|turn>model\n<think>\n\n</think>\n\n' + message.content + '<turn|>\n' -}}
+    {%- else -%}
+        {{- '<|turn>user\n' + message.content + '<turn|>\n' -}}
+    {%- endif -%}
+{%- endfor -%}
+{%- if add_generation_prompt -%}
+{{- '<|turn>model\n<think>\n\n</think>\n\n' -}}
+{%- endif -%}"""
+    },
+
     "gpt": {
         "bos": "",
         "eos": "<|end|>",

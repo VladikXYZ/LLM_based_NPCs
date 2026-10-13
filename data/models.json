@@ -74,7 +74,7 @@
  {
   "name": "Lythri 7B A4B",
   "path": "models/Lythri-7B-A4B-Q4_0_8.gguf",
-  "family": "gemma_think",
+  "family": "lythri",
   "params": 6166578784
  },
  {
@@ -140,7 +140,7 @@
  {
   "name": "Lythri 4B A2B",
   "path": "models/Lythri-4B-A2B-Q4_0_8.gguf",
-  "family": "gemma_think",
+  "family": "lythri",
   "params": 6166578784
  },
  {
