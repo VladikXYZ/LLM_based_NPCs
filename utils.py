@@ -276,26 +276,60 @@ if __name__ == '__main__':
     #     json.dump(models_dicts, f, indent=1)
     #     # print("skibidi")
 
-    with open("data/jb.json", "r") as f:
-        jbs = json.load(f)
+    # with open("data/jb.json", "r") as f:
+    #     jbs = json.load(f)
+    #
+    # # print(jbs["categories"])
+    # jbs = jbs["categories"]
+    # jailbreak_tets = []
+    # for i, jb in enumerate(jbs):
+    #     tests = jbs[jb]["tests"]
+    #     for j,test in enumerate(tests):
+    #         print(test["test_id"])
+    #         turns = test["turns"]
+    #         messages = []
+    #         targets = []
+    #         for k, turn in enumerate(turns):
+    #             print(f"{i}.{j}.{k} {turn["prompt"]}")
+    #             print(turn["target_behavior"])
+    #             messages.append(turn["prompt"])
+    #             targets.append(turn["target_behavior"])
+    #         jailbreak_tets.append((test["test_id"], messages, targets))
+    # with open("data/vlad_jb.json", "w") as f:
+    #     json.dump(jailbreak_tets, f, indent=1)
+    with open("data/roles.json", "r") as f:
+         roles = json.load(f)
 
-    # print(jbs["categories"])
-    jbs = jbs["categories"]
-    jailbreak_tets = []
-    for i, jb in enumerate(jbs):
-        tests = jbs[jb]["tests"]
-        for j,test in enumerate(tests):
-            print(test["test_id"])
-            turns = test["turns"]
-            messages = []
-            targets = []
-            for k, turn in enumerate(turns):
-                print(f"{i}.{j}.{k} {turn["prompt"]}")
-                print(turn["target_behavior"])
-                messages.append(turn["prompt"])
-                targets.append(turn["target_behavior"])
-            jailbreak_tets.append((test["test_id"], messages, targets))
-    with open("data/vlad_jb.json", "w") as f:
-        json.dump(jailbreak_tets, f, indent=1)
+    uniques = []
+    pairs = set()
+    unique_names = set()
+    for role in roles:
+        splitted = role.split(".")
+        splitted = ".".join(splitted[1:]).split("Background")
+        name = splitted[0][1:-1]
+        background = ".".join(splitted[1:])[2:]
+        # print(name, background)
+        if (name, background) not in pairs:
+            pairs.add((name, background))
+            uniques.append({"name": name, "lore": background})
+        else:
+            print("Same")
+
+        if name not in unique_names:
+            unique_names.add(name)
+    unique_names = sorted(list(unique_names))
+    uniques = sorted(uniques, key=lambda x:x["name"])
+
+    print(f"Unique characters: {len(unique_names)}\nUnique combinations: {len(uniques)}")
+
+
+    with open("data/extr.json", "w") as f:
+        json.dump(uniques, f, indent=1)
+
+    with open("data/names.json", "w") as f:
+        json.dump(unique_names, f, indent=1)
+
+
+
 
 
