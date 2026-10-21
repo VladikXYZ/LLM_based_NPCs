@@ -20,4 +20,5 @@ conda activate "$ENV"
 export CMAKE_ARGS="-DGGML_CUDA=on -DCMAKE_CUDA_ARCHITECTURES=80;86;89;90 -GNinja" CMAKE_BUILD_PARALLEL_LEVEL=8
 pip install --no-cache-dir "llama-cpp-python==0.3.36"
 pip install --no-cache-dir -r requirements.txt "huggingface_hub[hf_xet]"
-python -c "import llama_cpp; print('llama-cpp-python', llama_cpp.__version__, '| GPU offload:', llama_cpp.llama_supports_gpu_offload())"
+# llama_cpp cannot be imported here: the build node has no GPU driver (libcuda.so.1), so only check the CUDA library
+ls "$ENV"/lib/python3.13/site-packages/llama_cpp/lib/libggml-cuda.so && echo "llama-cpp-python built with CUDA"

@@ -1,6 +1,6 @@
 #!/bin/bash
 #PBS -N download_models
-#PBS -l select=1:ncpus=2:mem=4gb
+#PBS -l select=1:ncpus=2:mem=8gb
 #PBS -l walltime=08:00:00
 #PBS -j oe
 # Downloads the models in data/models.json into models/. Run from the repo root: qsub metacentrum/download_models.sh
