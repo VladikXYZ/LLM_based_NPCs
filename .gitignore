@@ -4,3 +4,8 @@ __pycache__
 /models/*
 !models/Supra-Router-51M-Q1_0.gguf
 !data/models.json
+
+# MetaCentrum
+.venv/
+.conda-gpu/
+*.o[0-9]*

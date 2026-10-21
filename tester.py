@@ -30,8 +30,9 @@ def run_jailbreak_benchmark(output_file: str = "jailbreak_results_test_r.csv"):
     devices = utils.get_devices()
     device = devices[0]
     print(f"Using default device: {device['type']} | {device['name']}")
-    gpu_layers = -1 if device["type"] == "Vulkan" else 0
-    os.environ["GGML_VK_VISIBLE_DEVICES"] = str(device["id"] * (device["type"] == "Vulkan"))
+    gpu_layers = -1 if device["type"] in ("Vulkan", "CUDA") else 0
+    # CUDA GPUs are picked by the job scheduler (CUDA_VISIBLE_DEVICES), Vulkan ones here
+    if device["type"] != "CUDA": os.environ["GGML_VK_VISIBLE_DEVICES"] = str(device["id"] * (device["type"] == "Vulkan"))
     models = utils.get_models()
     with open("data/data_3npcs.json", "r", encoding="utf-8") as f: npcs = json.load(f)
     with open("data/vladmartin_jb.json", "r", encoding="utf-8") as f: jailbreaks = json.load(f)

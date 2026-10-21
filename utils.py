@@ -106,6 +106,10 @@ except Exception:
         match = re.search(r"ggml_vulkan:\s+(\d+)\s+=\s+(.*?)\s+\|", line)
         if match:
             devices.append({"id": match.group(1), "name": match.group(2).strip(), "type": "Vulkan"})
+        # a CUDA build of llama-cpp-python (e.g. on MetaCentrum) lists its GPUs like this
+        match = re.search(r"Device\s+(\d+):\s+(.*?), compute capability", line)
+        if match:
+            devices.append({"id": match.group(1), "name": match.group(2).strip(), "type": "CUDA"})
 
     cpu_id = str(len(devices))
     devices.append({"id": cpu_id, "name": "CPU", "type": "CPU"})

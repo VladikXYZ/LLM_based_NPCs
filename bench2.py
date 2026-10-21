@@ -85,8 +85,9 @@ class Benchmarker:
             else: sys.exit(f"Invalid device value:{dev}")
 
         print(f"\n⚡ Fast Start: Running Benchmark on {self.device['name']}...")
-        self.gpu_layers = -1 if self.device["type"] == "Vulkan" else 0
-        os.environ["GGML_VK_VISIBLE_DEVICES"] = str(self.device["id"] * (self.device["type"] == "Vulkan"))
+        self.gpu_layers = -1 if self.device["type"] in ("Vulkan", "CUDA") else 0
+        # CUDA GPUs are picked by the job scheduler (CUDA_VISIBLE_DEVICES), Vulkan ones here
+        if self.device["type"] != "CUDA": os.environ["GGML_VK_VISIBLE_DEVICES"] = str(self.device["id"] * (self.device["type"] == "Vulkan"))
         self._run_benchmark()
 
     def _cache(self, llm):
