@@ -15,7 +15,7 @@ REASONING_RULE = [
     f"OUTPUT FORMAT, mandatory in every reply: first a one-sentence plan of how you will answer (not the answer itself), then exactly one {SEPARATOR} separator, then the spoken dialogue, which must never be empty and is the only part the rules above apply to. Example: Asked about the weather, I will grumble about the rain. {SEPARATOR} It has rained for three days.",
 ]
 CUSTOM_JINJA = True
-REASON = False
+REASON = True
 with open("data/data_3npcs.json") as file: NPC = json.load(file)[2]
 if CUSTOM_JINJA or REASON:
     CHAT_HISTORY = []
@@ -26,7 +26,7 @@ else:
 CONTEXT_SIZE = 4096+REASON*2048
 MAX_TOKENS = 64+REASON*32
 
-def run_jailbreak_benchmark(output_file: str = "jailbreak_results_test.csv"):
+def run_jailbreak_benchmark(output_file: str = "jailbreak_results_test_r.csv"):
     devices = utils.get_devices()
     device = devices[0]
     print(f"Using default device: {device['type']} | {device['name']}")
@@ -34,7 +34,7 @@ def run_jailbreak_benchmark(output_file: str = "jailbreak_results_test.csv"):
     os.environ["GGML_VK_VISIBLE_DEVICES"] = str(device["id"] * (device["type"] == "Vulkan"))
     models = utils.get_models()
     with open("data/data_3npcs.json", "r", encoding="utf-8") as f: npcs = json.load(f)
-    with open("data/vlad_jb.json", "r", encoding="utf-8") as f: jailbreaks = json.load(f)
+    with open("data/vladmartin_jb.json", "r", encoding="utf-8") as f: jailbreaks = json.load(f)
     total_prompts = sum(len(prompts) for _, prompts, _ in jailbreaks)
     log_data = []
 
