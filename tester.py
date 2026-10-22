@@ -1,4 +1,5 @@
 import os
+import sys
 import json
 import pandas as pd
 from llama_cpp import Llama, LlamaRAMCache, llama_cpp
@@ -31,8 +32,10 @@ def run_jailbreak_benchmark(output_file: str = "jailbreak_results_test_r.csv"):
     device = devices[0]
     print(f"Using default device: {device['type']} | {device['name']}")
     gpu_layers = -1 if device["type"] in ("Vulkan", "CUDA") else 0
-    # CUDA GPUs are picked by the job scheduler (CUDA_VISIBLE_DEVICES), Vulkan ones here
-    if device["type"] != "CUDA": os.environ["GGML_VK_VISIBLE_DEVICES"] = str(device["id"] * (device["type"] == "Vulkan"))
+    # CUDA GPUs are picked by the job scheduler (CUDA_VISIBLE_DEVICES), Vulkan ones here,
+    # unless the caller already chose the Vulkan GPU (metacentrum/compare_backends.sh does)
+    if device["type"] != "CUDA" and "GGML_VK_VISIBLE_DEVICES" not in os.environ:
+        os.environ["GGML_VK_VISIBLE_DEVICES"] = str(device["id"] * (device["type"] == "Vulkan"))
     models = utils.get_models()
     with open("data/data_3npcs.json", "r", encoding="utf-8") as f: npcs = json.load(f)
     with open("data/vladmartin_jb.json", "r", encoding="utf-8") as f: jailbreaks = json.load(f)
@@ -106,4 +109,6 @@ def run_jailbreak_benchmark(output_file: str = "jailbreak_results_test_r.csv"):
 
 
 if __name__ == "__main__":
-    run_jailbreak_benchmark()
+    # python tester.py [output.csv]
+    if len(sys.argv) > 1: run_jailbreak_benchmark(sys.argv[1])
+    else: run_jailbreak_benchmark()
