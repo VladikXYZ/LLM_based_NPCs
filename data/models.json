@@ -6,7 +6,7 @@
   "params": 16947541728
  },
  {
-  "name": "nvidia Nemotron 3.5 30B A30B",
+  "name": "nvidia Nemotron 3.5 30B A3B",
   "path": "models/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-Q4_0.gguf",
   "family": "chatml_inline",
   "params": 16947541728
@@ -24,7 +24,7 @@
   "params": 16947541728
  },
  {
-  "name": "LFM2 24B A2B q4_k_m",
+  "name": "LFM2 24B A2B",
   "path": "models/LFM2-24B-A2B-Q4_K_M.gguf",
   "family": "lfm",
   "params": 14415473952
