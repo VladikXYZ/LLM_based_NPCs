@@ -14,11 +14,11 @@ export TMPDIR="$SCRATCHDIR" CONDA_PKGS_DIRS="$SCRATCHDIR/pkgs"
 source /etc/profile.d/30_meta_modules.sh
 module load mambaforge/22.9.0
 mamba create -y -q -p "$ENV" -c conda-forge python=3.13 pip cmake ninja cxx-compiler \
-    vulkan-headers libvulkan-loader shaderc vulkan-tools
+    "vulkan-headers>=1.4" spirv-headers libvulkan-loader shaderc vulkan-tools
 eval "$(conda shell.bash hook)"
 conda activate "$ENV"
 export VULKAN_SDK="$ENV"   # where CMake looks for the Vulkan headers, library and glslc
-export CMAKE_ARGS="-DGGML_VULKAN=on -GNinja" CMAKE_BUILD_PARALLEL_LEVEL=8
+export CMAKE_ARGS="-DGGML_VULKAN=on -DCMAKE_PREFIX_PATH=$ENV -GNinja" CMAKE_BUILD_PARALLEL_LEVEL=8
 pip install --no-cache-dir "llama-cpp-python==0.3.36"
 pip install --no-cache-dir -r requirements.txt
 ls "$ENV"/lib/python3.13/site-packages/llama_cpp/lib/libggml-vulkan.so && echo "llama-cpp-python built with Vulkan"
