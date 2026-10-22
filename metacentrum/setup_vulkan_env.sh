@@ -14,7 +14,7 @@ export TMPDIR="$SCRATCHDIR" CONDA_PKGS_DIRS="$SCRATCHDIR/pkgs"
 source /etc/profile.d/30_meta_modules.sh
 module load mambaforge/22.9.0
 mamba create -y -q -p "$ENV" -c conda-forge python=3.13 pip cmake ninja cxx-compiler \
-    "vulkan-headers>=1.4" spirv-headers libvulkan-loader shaderc vulkan-tools
+    libvulkan-headers spirv-headers libvulkan-loader shaderc vulkan-tools
 eval "$(conda shell.bash hook)"
 conda activate "$ENV"
 export VULKAN_SDK="$ENV"   # where CMake looks for the Vulkan headers, library and glslc
