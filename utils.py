@@ -236,98 +236,21 @@ def load_llm(model, llm_kwargs, warmup_inputs=[{"role":"user", "content":"warmup
 
 
 if __name__ == '__main__':
-    pass
-    # models = sorted([os.path.basename(x) for x in os.listdir(MODELS_DIRECTORY) if x.endswith(".gguf")],key=os.path.basename)
-    # print(models)
-    # reals = set([f"models/{x}" for x in models])
-    # print(reals)
-    # models_dicts = []
-    # for model in models:
-    #     name = model.lower().split(".")[:-1]
-    #     name = "".join(name)
-    #     print(name)
-    #     if "gemma" in name: family = "gemma"
-    #     elif "gpt" in name: family = "gptoss"
-    #     elif "spark" in name: family = "spark"
-    #     elif "llama" in name: family = "llama"
-    #     elif "ministral" in name: family = "mistral"
-    #     elif "glm" in name: family = "glm"
-    #     elif any(k in name for k in ["qwen", "bonsai", "gpt", "nemotron", "ling", "spark", "granite", "minicpm", "maple"]):
-    #         family = "chatml"
-    #     elif any(k in name for k in ["lfm"]):
-    #         family = "chatml_nr"
-    #     else: family = None
-    #     m_dict = {"name": name.replace("-", " "), "path": f"models/{model}", "family": family, "params": os.path.getsize(f"models/{model}")}
-    #     models_dicts.append(m_dict)
-    #
-    # models_dicts = sorted(models_dicts, key=lambda x: x["params"], reverse=True)
-    #
-    # with open(MODELS_FILE, "w") as f:
-    #     json.dump(models_dicts, f, indent=1)
+    with open("data/extr.json", "r") as f:
+       chars = json.load(f)
 
-    # with open("models/backup.json", "r") as f:
-    #     models_dicts = json.load(f)
-    # big_dict = {}
-    # print(models_dicts)
-    # for model in models_dicts:
-    #     big_dict[model["path"].split("/")[-1]] = model
-    # print(big_dict)
-    # with open(MODELS_FILE, "w") as f:
-    #     json.dump(models_dicts, f, indent=1)
-    #     # print("skibidi")
+    merged = {}
+    for char in chars:
+        if merged.__contains__(char["name"]): merged[char["name"]].append(char["lore"])
+        else: merged[char["name"]] = [char["lore"]]
 
-    # with open("data/jb.json", "r") as f:
-    #     jbs = json.load(f)
-    #
-    # # print(jbs["categories"])
-    # jbs = jbs["categories"]
-    # jailbreak_tets = []
-    # for i, jb in enumerate(jbs):
-    #     tests = jbs[jb]["tests"]
-    #     for j,test in enumerate(tests):
-    #         print(test["test_id"])
-    #         turns = test["turns"]
-    #         messages = []
-    #         targets = []
-    #         for k, turn in enumerate(turns):
-    #             print(f"{i}.{j}.{k} {turn["prompt"]}")
-    #             print(turn["target_behavior"])
-    #             messages.append(turn["prompt"])
-    #             targets.append(turn["target_behavior"])
-    #         jailbreak_tets.append((test["test_id"], messages, targets))
-    # with open("data/vlad_jb.json", "w") as f:
-    #     json.dump(jailbreak_tets, f, indent=1)
-    # with open("data/roles.json", "r") as f:
-    #      roles = json.load(f)
-    #
-    # uniques = []
-    # pairs = set()
-    # unique_names = set()
-    # for role in roles:
-    #     splitted = role.split(".")
-    #     splitted = ".".join(splitted[1:]).split("Background")
-    #     name = splitted[0][1:-1]
-    #     background = ".".join(splitted[1:])[2:]
-    #     # print(name, background)
-    #     if (name, background) not in pairs:
-    #         pairs.add((name, background))
-    #         uniques.append({"name": name, "lore": background})
-    #     else:
-    #         print("Same")
-    #
-    #     if name not in unique_names:
-    #         unique_names.add(name)
-    # unique_names = sorted(list(unique_names))
-    # uniques = sorted(uniques, key=lambda x:x["name"])
-    #
-    # print(f"Unique characters: {len(unique_names)}\nUnique combinations: {len(uniques)}")
-    #
-    #
-    # with open("data/extr.json", "w") as f:
-    #     json.dump(uniques, f, indent=1)
-    #
-    # with open("data/names.json", "w") as f:
-    #     json.dump(unique_names, f, indent=1)
+
+    x= []
+    for n,ls in merged.items():
+        x.append({"name": n, "lores": ls})
+
+    with open("data/extr2.json", "w") as f:
+        json.dump(x, f, indent=1)
 
 
 
